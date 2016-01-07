@@ -1,0 +1,16 @@
+NAME = eltonleong
+OPTIMIZE = -O2
+DEBUG = -g
+CC = gcc
+CFLAGS = $(OPTIMIZE) $(DEBUG) -Wall -Wextra -march=native -mtune=native
+
+default: simpsh
+
+simpsh: main.c
+	$(CC) $(CFLAGS) $^ -o $@
+check:
+
+dist: check
+	tar -czf lab1-$(NAME).tar.gz --mode=a-w *.c Makefile
+clean: 
+	rm -f *.o *.tar.gz simpsh
