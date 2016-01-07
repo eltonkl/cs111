@@ -3,14 +3,14 @@
 
 #include <stdbool.h>
 
-typedef enum token 
+typedef enum token_t
 {
     file_flag,
     file_open,
     subcommand,
     misc,
     unexpected
-} token;
+} token_t;
 
 typedef enum file_flag_options
 {
@@ -25,7 +25,7 @@ typedef enum file_flag_options
     rsync,
     sync,
     trunc
-} file_flags;
+} file_flag_option_t;
 
 typedef enum file_open_options
 {
@@ -33,13 +33,13 @@ typedef enum file_open_options
     rdwr,
     wronly,
     pipe
-} file_open_options;
+} file_open_options_t;
 
 typedef enum subcommand_options
 {
     command,
     wait
-} subcommands;
+} subcommands_options_t;
 
 typedef enum misc_options
 {
@@ -50,16 +50,16 @@ typedef enum misc_options
     ignore,
     default_,
     pause
-} misc_options;
+} misc_options_t;
 
-typedef struct flag
+typedef struct option_t
 {
-    token type;
-    void* option;
+    token_t type;
+    int option;
     int num_args;
     char** args;
-} flag;
+} option_t;
 
-bool validate_flag(flag* f);
+bool validate_option(option_t* f);
 
 #endif
