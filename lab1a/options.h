@@ -1,23 +1,23 @@
-#ifndef TOKENS_H
-#define TOKENS_H
+#ifndef OPTIONS_H
+#define OPTIONS_H
 
 #include <stdbool.h>
 
-typedef struct token_tuple_t
+typedef struct option_tuple_t
 {
     int type;
     int option;
     char* value;
-} token_tuple_t;
+} option_tuple_t;
 
-typedef enum token_t
+typedef enum option_type_t
 {
     file_flag_ = 0,
     file_open_,
     subcommand_,
     misc_,
     unexpected_
-} token_t;
+} option_type_t;
 
 typedef enum file_flag_options_t
 {
@@ -59,11 +59,12 @@ typedef enum misc_options_t
     pause_
 } misc_options_t;
 
-extern token_tuple_t TOKENS[24];
+#define NUM_OPTIONS 24
+extern option_tuple_t OPTIONS[NUM_OPTIONS];
 
 typedef struct option_t
 {
-    token_t type;
+    option_type_t type;
     int option;
     int num_args;
     char** args;

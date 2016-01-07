@@ -1,3 +1,7 @@
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+
 #include "tokens.h"
 
 #define TOKEN_TUPLE(x, y) { y, x##_, "--##x" }
@@ -6,7 +10,7 @@
 #define SUBCOMMAND_OPTION(x) TOKEN_TUPLE(x, subcommand_)
 #define MISC_OPTION(x) TOKEN_TUPLE(x, misc_)
 
-token_tuple_t TOKENS[24] =
+option_tuple_t OPTIONS[NUM_OPTIONS] =
 {
     FILE_FLAG_OPTION(append),
     FILE_FLAG_OPTION(cloexec),
@@ -68,23 +72,35 @@ bool validate_option(option_t* opt)
     if(opt->type == misc_)
     //Some misc have no args, others have one arg
     {
-        if ((opt->option == catch_ || opt->option == ignore_ || opt->option == default_) && opt->num_args != 1) return false;
-        if ((opt->option == verbose_ || opt->option == profile_ || opt->option == abort_ || opt->option == pause_) && opt->num_args != 0) return false;
+        if ((opt->option == catch_ || opt->option == ignore_ || opt->option == default_) && opt->num_args != 1)
+            return false;
+        if ((opt->option == verbose_ || opt->option == profile_ || opt->option == abort_ || opt->option == pause_) && opt->num_args != 0)
+            return false;
     }
 	
     //If we make it this far, then our option is indeed valid.
     return true;
 }
 
-//Input: num_args > 0 
+//Input: num_tokens > 0 
 //Input: args[0] contains an option 
-option_t* create_flag(int* num_args, char** args) 
+option_t* create_flag(int num_tokens, char** args) 
 { 
     option_t* opt = malloc(sizeof(option_t)); 
     if (!opt) 
         return NULL; 
-    for (int i = 0; i < sizeof(TOKENS)/sizeof(token_tuple_t); i++) 
+    for (int i = 0; i < NUM_OPTIONS; i++) 
     { 
-        //if (strcmp(args[0], TOKENS[i] 
-    } 
+        if (strcmp(args[0], OPTIONS[i].value) == 0)
+        {
+            opt->type = OPTIONS[i].type;
+            opt->option = OPTIONS[i].option;
+            opt->num_args = num_tokens - 1;
+            opt->args = &args[1];
+            return opt;
+        }
+    }
+    //This should never occur
+    opt->type = unexpected_;
+    return opt;
 } 
