@@ -3,13 +3,12 @@
 
 #include <stdbool.h>
 
-#define TOKEN_PAIR(x) { x##_, "--##x" }
-
-typedef struct token_pair_t
+typedef struct token_tuple_t
 {
+    int type;
     int option;
     char* value;
-} token_pair_t;
+} token_tuple_t;
 
 typedef enum token_t
 {
@@ -35,21 +34,6 @@ typedef enum file_flag_options_t
     trunc_
 } file_flag_option_t;
 
-token_pair_t FILE_FLAG_OPTION_TOKENS[] = 
-{
-    TOKEN_PAIR(append),
-    TOKEN_PAIR(cloexec),
-    TOKEN_PAIR(creat),
-    TOKEN_PAIR(directory),
-    TOKEN_PAIR(dsync),
-    TOKEN_PAIR(excl),
-    TOKEN_PAIR(nofollow),
-    TOKEN_PAIR(nonblock),
-    TOKEN_PAIR(rsync),
-    TOKEN_PAIR(sync),
-    TOKEN_PAIR(trunc)
-};
-
 typedef enum file_open_options_t
 {
     rdonly_ = 0,
@@ -58,25 +42,11 @@ typedef enum file_open_options_t
     pipe_
 } file_open_options_t;
 
-token_pair_t FILE_OPEN_OPTION_TOKENS[] =
-{
-    TOKEN_PAIR(rdonly),
-    TOKEN_PAIR(rdwr),
-    TOKEN_PAIR(wronly),
-    TOKEN_PAIR(pipe)
-};
-
 typedef enum subcommand_options_t
 {
     command_ = 0,
     wait_
 } subcommands_options_t;
-
-token_pair_t SUBCOMMAND_OPTION_TOKENS[] =
-{
-    TOKEN_PAIR(command),
-    TOKEN_PAIR(wait)
-};
 
 typedef enum misc_options_t
 {
@@ -89,15 +59,41 @@ typedef enum misc_options_t
     pause_
 } misc_options_t;
 
-token_pair_t MISC_OPTION_TOKENS[] =
+#define TOKEN_TUPLE(x, y) { y, x##_, "--##x" }
+#define FILE_FLAG_OPTION(x) TOKEN_TUPLE(x, file_flag_)
+#define FILE_OPEN_OPTION(x) TOKEN_TUPLE(x, file_open_)
+#define SUBCOMMAND_OPTION(x) TOKEN_TUPLE(x, subcommand_)
+#define MISC_OPTION(x) TOKEN_TUPLE(x, misc_)
+
+token_tuple_t TOKENS[] = 
 {
-    TOKEN_PAIR(verbose),
-    TOKEN_PAIR(profile),
-    TOKEN_PAIR(abort),
-    TOKEN_PAIR(catch),
-    TOKEN_PAIR(ignore),
-    TOKEN_PAIR(default),
-    TOKEN_PAIR(pause)
+    FILE_FLAG_OPTION(append),
+    FILE_FLAG_OPTION(cloexec),
+    FILE_FLAG_OPTION(creat),
+    FILE_FLAG_OPTION(directory),
+    FILE_FLAG_OPTION(dsync),
+    FILE_FLAG_OPTION(excl),
+    FILE_FLAG_OPTION(nofollow),
+    FILE_FLAG_OPTION(nonblock),
+    FILE_FLAG_OPTION(rsync),
+    FILE_FLAG_OPTION(sync),
+    FILE_FLAG_OPTION(trunc),
+
+    FILE_OPEN_OPTION(rdonly),
+    FILE_OPEN_OPTION(rdwr),
+    FILE_OPEN_OPTION(wronly),
+    FILE_OPEN_OPTION(pipe),
+
+    SUBCOMMAND_OPTION(command),
+    SUBCOMMAND_OPTION(wait),
+
+    MISC_OPTION(verbose),
+    MISC_OPTION(profile),
+    MISC_OPTION(abort),
+    MISC_OPTION(catch),
+    MISC_OPTION(ignore),
+    MISC_OPTION(default),
+    MISC_OPTION(pause)
 };
 
 typedef struct option_t

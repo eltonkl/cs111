@@ -11,6 +11,6 @@ simpsh: main.c tokens.c
 check:
 
 dist: check
-	tar -czf lab1-$(NAME).tar.gz --mode=a-w *.c Makefile
+	tar -czf lab1-$(NAME).tar.gz --mode=a-w *.c *.h Makefile
 clean: 
 	rm -f *.o *.tar.gz simpsh
