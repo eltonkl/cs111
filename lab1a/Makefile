@@ -6,7 +6,7 @@ CFLAGS = $(OPTIMIZE) $(DEBUG) -Wall -Wextra -march=native -mtune=native -std=c11
 
 default: simpsh
 
-simpsh: main.c
+simpsh: main.c tokens.c
 	$(CC) $(CFLAGS) $^ -o $@
 check:
 

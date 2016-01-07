@@ -1,6 +1,8 @@
 #ifndef TOKENS_H
 #define TOKENS_H
 
+#include <stdbool.h>
+
 typedef enum token 
 {
     file_flag,
@@ -10,7 +12,7 @@ typedef enum token
     unexpected
 } token;
 
-typedef enum file_flags
+typedef enum file_flag_options
 {
     append,
     cloexec,
@@ -33,7 +35,7 @@ typedef enum file_open_options
     pipe
 } file_open_options;
 
-typedef enum subcommands
+typedef enum subcommand_options
 {
     command,
     wait
@@ -43,7 +45,7 @@ typedef enum misc_options
 {
     verbose,
     profile,
-    abort,
+    abort_,
     catch_,
     ignore,
     default_,
@@ -53,6 +55,7 @@ typedef enum misc_options
 typedef struct flag
 {
     token type;
+    void* option;
     int num_args;
     char** args;
 } flag;
