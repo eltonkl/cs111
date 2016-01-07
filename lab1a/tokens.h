@@ -12,7 +12,7 @@ typedef enum token_t
     unexpected
 } token_t;
 
-typedef enum file_flag_options
+typedef enum file_flag_options_t
 {
     append,
     cloexec,
@@ -27,7 +27,7 @@ typedef enum file_flag_options
     trunc
 } file_flag_option_t;
 
-typedef enum file_open_options
+typedef enum file_open_options_t
 {
     rdonly,
     rdwr,
@@ -35,13 +35,13 @@ typedef enum file_open_options
     pipe
 } file_open_options_t;
 
-typedef enum subcommand_options
+typedef enum subcommand_options_t
 {
     command,
     wait
 } subcommands_options_t;
 
-typedef enum misc_options
+typedef enum misc_options_t
 {
     verbose,
     profile,
