@@ -1,5 +1,42 @@
 #include "tokens.h"
 
+#define TOKEN_TUPLE(x, y) { y, x##_, "--##x" }
+#define FILE_FLAG_OPTION(x) TOKEN_TUPLE(x, file_flag_)
+#define FILE_OPEN_OPTION(x) TOKEN_TUPLE(x, file_open_)
+#define SUBCOMMAND_OPTION(x) TOKEN_TUPLE(x, subcommand_)
+#define MISC_OPTION(x) TOKEN_TUPLE(x, misc_)
+
+token_tuple_t TOKENS[24] =
+{
+    FILE_FLAG_OPTION(append),
+    FILE_FLAG_OPTION(cloexec),
+    FILE_FLAG_OPTION(creat),
+    FILE_FLAG_OPTION(directory),
+    FILE_FLAG_OPTION(dsync),
+    FILE_FLAG_OPTION(excl),
+    FILE_FLAG_OPTION(nofollow),
+    FILE_FLAG_OPTION(nonblock),
+    FILE_FLAG_OPTION(rsync),
+    FILE_FLAG_OPTION(sync),
+    FILE_FLAG_OPTION(trunc),
+
+    FILE_OPEN_OPTION(rdonly),
+    FILE_OPEN_OPTION(rdwr),
+    FILE_OPEN_OPTION(wronly),
+    FILE_OPEN_OPTION(pipe),
+
+    SUBCOMMAND_OPTION(command),
+    SUBCOMMAND_OPTION(wait),
+
+    MISC_OPTION(verbose),
+    MISC_OPTION(profile),
+    MISC_OPTION(abort),
+    MISC_OPTION(catch),
+    MISC_OPTION(ignore),
+    MISC_OPTION(default),
+    MISC_OPTION(pause)
+};
+
 bool validate_option(option_t* opt)
 {
 	//If none of the options are chosen then we don't have a valid option
