@@ -1,5 +1,5 @@
 NAME = EltonLeongAndJamesWang
-OPTIMIZE = -O2
+OPTIMIZE =
 DEBUG = -g
 CC = gcc
 CFLAGS = $(OPTIMIZE) $(DEBUG) -Wall -Wextra -march=native -mtune=native -std=c11

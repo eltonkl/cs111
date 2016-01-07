@@ -71,5 +71,6 @@ typedef struct option_t
 } option_t;
 
 bool is_valid_option(option_t* opt);
+option_t* create_option(int num_tokens, char** tokens);
 
 #endif

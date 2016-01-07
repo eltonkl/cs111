@@ -2,9 +2,9 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "tokens.h"
+#include "options.h"
 
-#define TOKEN_TUPLE(x, y) { y, x##_, "--##x" }
+#define TOKEN_TUPLE(x, y) { y, x##_, "--" #x }
 #define FILE_FLAG_OPTION(x) TOKEN_TUPLE(x, file_flag_)
 #define FILE_OPEN_OPTION(x) TOKEN_TUPLE(x, file_open_)
 #define SUBCOMMAND_OPTION(x) TOKEN_TUPLE(x, subcommand_)
@@ -41,7 +41,7 @@ option_tuple_t OPTIONS[NUM_OPTIONS] =
     MISC_OPTION(pause)
 };
 
-bool validate_option(option_t* opt)
+bool is_valid_option(option_t* opt)
 {
     //If none of the options are chosen then we don't have a valid option
     if (opt->type < 0 || opt->type > 4)
@@ -84,23 +84,24 @@ bool validate_option(option_t* opt)
 
 //Input: num_tokens > 0 
 //Input: args[0] contains an option 
-option_t* create_flag(int num_tokens, char** args) 
+option_t* create_option(int num_tokens, char** tokens) 
 { 
     option_t* opt = malloc(sizeof(option_t)); 
     if (!opt) 
         return NULL; 
     for (int i = 0; i < NUM_OPTIONS; i++) 
     { 
-        if (strcmp(args[0], OPTIONS[i].value) == 0)
+        if (strcmp(tokens[0], OPTIONS[i].value) == 0)
         {
             opt->type = OPTIONS[i].type;
             opt->option = OPTIONS[i].option;
             opt->num_args = num_tokens - 1;
-            opt->args = &args[1];
+            opt->args = &tokens[1];
             return opt;
         }
     }
     //This should never occur
     opt->type = unexpected_;
     return opt;
-} 
+}
+
