@@ -1,4 +1,4 @@
-NAME = eltonleong
+NAME = EltonLeongAndJamesWang
 OPTIMIZE = -O2
 DEBUG = -g
 CC = gcc
