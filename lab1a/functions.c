@@ -39,4 +39,15 @@ int simpsh_open(const char* file, int setting)
     return fd;
 }
 
+//Function for --abort
+void simpsh_abort()
+{
+    int* x = NULL;
+    int y = &x;
+}
 
+//Function for --verbose; return status of simpsh_verbose
+void simpsh_verbose_enable()
+{
+    simpsh_verbose = true;
+}
