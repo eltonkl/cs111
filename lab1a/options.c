@@ -44,7 +44,7 @@ void zero_flags()
     trunc_flag = 0;
 }
 
-bool check_valid_option(option_t* opt)
+bool check_valid_option(const option_t* opt)
 {
     //If none of the options are chosen then we don't have a valid option
     if (opt->type < file_open_ || opt->type > unexpected_)
@@ -83,23 +83,24 @@ bool check_valid_option(option_t* opt)
 }
 
 //Input: args[0] contains an option
-option_t* create_option(char val, int num_tokens, char** tokens) 
+option_t create_option(char val, int num_args, char** args) 
 { 
-    option_t* opt = malloc(sizeof(option_t)); 
-    if (!opt) 
-        return NULL; 
+    option_t opt; 
     for (int i = 0; i < NUM_OPTIONS; i++) 
     { 
         if (val == OPTIONS[i].val)
         {
-            opt->type = OPTIONS[i].type;
-            opt->option = OPTIONS[i].option;
-            opt->num_args = num_tokens;
-            opt->args = tokens;
+            opt.type = OPTIONS[i].type;
+            opt.option = OPTIONS[i].option;
+            opt.num_args = num_args;
+            if (num_args > 0)
+                opt.args = args;
+            else
+                opt.args = 0;
             return opt;
         }
     }
     //This should never occur
-    opt->type = unexpected_;
+    opt.type = unexpected_;
     return opt;
 }

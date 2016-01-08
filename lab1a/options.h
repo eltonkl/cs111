@@ -101,7 +101,7 @@ typedef struct option_t
 } option_t;
 
 void zero_flags();
-bool check_valid_option(option_t* opt);
-option_t* create_option(char val, int num_tokens, char** tokens);
+bool check_valid_option(const option_t* opt);
+option_t create_option(char val, int num_args, char** args);
 
 #endif

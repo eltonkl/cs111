@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include <unistd.h>
 #include <getopt.h>
 
@@ -29,32 +30,39 @@ int main(int argc, char** argv)
         
         if (c == -1)
             break;
-        switch (c)
+        else if(c == 0)
         {
-            case 0:
-                if (long_options[option_index].flag != 0)
-                    break; //Flag was set
-                break;
-            case '?':
-                break; //getopt_long already printed error msg
-            default:
-                //pass args to create_option and then check
-                printf ("option %s", long_options[option_index].name);
-                if (optarg)
+            //if (long_options[option_index].flag != 0)
+            //Flag was set
+        }
+        else if (c == '?')
+        {
+            //getopt_long already printed error msg
+        }
+        else
+        {
+            option_t opt;
+            //pass args to create_option and then check
+            if (optarg)
+            {
+                int num_args = 1;
+                if (optind < argc)
                 {
-                    printf(" with arg %s", optarg);
-                    printf("\n");
-                    if (optind < argc)
+                    int index = optind;
+                    while (index < argc)
                     {
-                        int temp = optind;
-                        printf ("non-option ARGV-elements: ");
-                        while (temp < argc)
-                            printf ("%s ", argv[temp++]);
-                        putchar ('\n');
+                        if (strncmp("--", argv[index++], 2) != 0)
+                            num_args++;
+                        else
+                            break;
                     }
-                    continue;
                 }
-                putchar('\n');
+                opt = create_option(long_options[option_index].val,
+                                    num_args, &argv[optind - 1]);
+            }
+            else
+                opt = create_option(long_options[option_index].val, 0, 0);
+            bool valid = check_valid_option(&opt);
         }
     }
     return 0;
