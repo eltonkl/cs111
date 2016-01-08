@@ -1,12 +1,21 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
-//Function for rdonly
-int rdonly(const char* file);
-//Function for wronly
-int wronly(const char* file);
-//Function for command
+//Function for --rdonly, --wronly, --and rdwr
+int simpsh_open(const char* file, char * setting);
 
-//Function for verbose
+//Function for --abort
+void simpsh_abort();
+
+//Function for --verbose
+void simpsh_verbose();
+
+//Function for --profile
+
+//Function for --catch N
+
+//Function for --ignore N
+
+//Function for --default N
 
 #endif
