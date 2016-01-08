@@ -58,7 +58,7 @@ int simpsh_open(const char* file, int setting)
     //setting must be one of O_RDONLY, O_WRONLY, O_RDWR or this function fails
     flags |= setting;
 
-    int fd = open(file, flags);
+    int fd = open(file, flags, 0644);
     return fd;
 }
 
