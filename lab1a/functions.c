@@ -1,7 +1,10 @@
-#include <unistd.h>                                                 //close, fork, getopt_long, pipe, dup2, execvp
+#define _GNU_SOURCE
+
+#include <unistd.h>     //close, fork, getopt_long, pipe, dup2, execvp
 #include <sys/types.h> 
 #include <sys/stat.h>
-#include <fcntl.h>     //open and creat
+#include <fcntl.h>      //open and creat
+
 #include "functions.h"
 #include "options.h"
 
@@ -43,7 +46,8 @@ int simpsh_open(const char* file, int setting)
 void simpsh_abort()
 {
     int* x = NULL;
-    int y = &x;
+    int y = *x;
+    (void)y;
 }
 
 //Function for --verbose; return status of simpsh_verbose
