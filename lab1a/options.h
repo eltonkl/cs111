@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <getopt.h>
 
+extern bool simpsh_verbose;
+
 extern int append_flag;
 extern int cloexec_flag;
 extern int creat_flag;
@@ -80,7 +82,9 @@ typedef struct option_t
 } option_t;
 
 void zero_flags();
-bool check_valid_option(char** argv, const option_t* opt);
+//Checks to see if the given option has the correct number of arguments
+//Additional validation is done in function handlers
+bool is_valid_option(char** argv, const option_t* opt);
 option_t create_actionable_option(char val, int num_args, char** args);
 
 #endif

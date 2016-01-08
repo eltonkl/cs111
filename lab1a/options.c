@@ -76,14 +76,14 @@ void zero_flags()
     trunc_flag = 0;
 }
 
-bool check_valid_option(char** argv, const option_t* opt)
+bool is_valid_option(char** argv, const option_t* opt)
 {
     //If none of the options are chosen then we don't have a valid option
     if (opt->type < file_open_ || opt->type > unexpected_)
         return false;
     int error_offset = 0; 
     //Otherwise, we must check to make sure that the option has the appropriate number of arguments
-    if(opt->type == file_open_)
+    if (opt->type == file_open_)
     //All opens have one arg, except pipe which has no args
     {
         if((opt->option == rdwr_ || opt->option == rdonly_ || opt->option == wronly_) && opt->num_args != 1)
@@ -97,10 +97,10 @@ bool check_valid_option(char** argv, const option_t* opt)
             goto fail;
         }
     }
-    else if(opt->type == subcommand_)
+    else if (opt->type == subcommand_)
     //command has i e o cmd and 0 or more args, wait has no args
     {
-        if(opt->option == command_ && opt->num_args < 4) 
+        if (opt->option == command_ && opt->num_args < 4)
         {
             error_offset = OFFSET_SUBCOMMAND_OPTIONS;
             goto fail;
