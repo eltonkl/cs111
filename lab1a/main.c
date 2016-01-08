@@ -57,12 +57,12 @@ int main(int argc, char** argv)
                             break;
                     }
                 }
-                opt = create_option(long_options[option_index].val,
-                                    num_args, &argv[optind - 1]);
+                opt = create_actionable_option(long_options[option_index].val,
+                                               num_args, &argv[optind - 1]);
             }
             else
-                opt = create_option(long_options[option_index].val, 0, 0);
-            bool valid = check_valid_option(&opt);
+                opt = create_actionable_option(long_options[option_index].val, 0, 0);
+            bool valid = check_valid_option(argv, &opt);
         }
     }
     return 0;

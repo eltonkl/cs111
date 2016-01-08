@@ -18,37 +18,15 @@ extern int trunc_flag;
 
 #define NUM_OPTIONS 24
 #define NUM_FLAGS 11
-static struct option long_options[] =
-{
-    //flags
-    { "append",     no_argument,    &append_flag,       1 },
-    { "cloexec",    no_argument,    &cloexec_flag,      1 },
-    { "creat",      no_argument,    &creat_flag,        1 },
-    { "directory",  no_argument,    &directory_flag,    1 },
-    { "dsync",      no_argument,    &dsync_flag,        1 },
-    { "excl",       no_argument,    &excl_flag,         1 },
-    { "nofollow",   no_argument,    &nofollow_flag,     1 },
-    { "nonblock",   no_argument,    &nonblock_flag,     1 },
-    { "rsync",      no_argument,    &rsync_flag,        1 },
-    { "sync",       no_argument,    &sync_flag,         1 },
-    { "trunc",      no_argument,    &trunc_flag,        1 },
-    //actionable options
-    { "rdonly", required_argument,  0,  'a' },
-    { "rdwr",   required_argument,  0,  'b' },
-    { "wronly", required_argument,  0,  'c' },
-    { "pipe",   no_argument,        0,  'd' },
+#define NUM_FILE_OPEN_OPTIONS 4
+#define NUM_SUBCOMMAND_OPTIONS 2
+#define NUM_MISC_OPTIONS 7
 
-    { "command",    required_argument,  0,  'e' },
-    { "wait",       no_argument,        0,  'f' },
+#define OFFSET_FILE_OPEN_OPTIONS NUM_FLAGS
+#define OFFSET_SUBCOMMAND_OPTIONS (OFFSET_FILE_OPEN_OPTIONS + NUM_FILE_OPEN_OPTIONS)
+#define OFFSET_MISC_OPTIONS (OFFSET_SUBCOMMAND_OPTIONS + NUM_SUBCOMMAND_OPTIONS)
 
-    { "verbose",    no_argument,        0,  'g' },
-    { "profile",    no_argument,        0,  'h' },
-    { "abort",      no_argument,        0,  'i' },
-    { "catch",      required_argument,  0,  'j' },
-    { "ignore",     required_argument,  0,  'k' },
-    { "default",    required_argument,  0,  'l' },
-    { "pause",      no_argument,        0,  'm' }
-};
+extern struct option long_options[NUM_OPTIONS];
 
 typedef struct option_tuple_t
 {
@@ -57,7 +35,8 @@ typedef struct option_tuple_t
     char val;
 } option_tuple_t;
 
-extern option_tuple_t OPTIONS[NUM_OPTIONS - NUM_FLAGS];
+#define NUM_ACTIONABLE_OPTIONS (NUM_OPTIONS - NUM_FLAGS)
+extern option_tuple_t ACTIONABLE_OPTIONS[NUM_ACTIONABLE_OPTIONS];
 
 typedef enum option_type_t
 {
@@ -101,7 +80,7 @@ typedef struct option_t
 } option_t;
 
 void zero_flags();
-bool check_valid_option(const option_t* opt);
-option_t create_option(char val, int num_args, char** args);
+bool check_valid_option(char** argv, const option_t* opt);
+option_t create_actionable_option(char val, int num_args, char** args);
 
 #endif
