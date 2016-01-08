@@ -64,21 +64,32 @@ int simpsh_open(const char* file, int setting)
 
 SIMPSH_FUNC(rdonly)
 {
+    (void)opt;
 }
+
 SIMPSH_FUNC(wronly)
 {
+    (void)opt;
 }
+
 SIMPSH_FUNC(rdwr)
 {
+    (void)opt;
 }
+
 SIMPSH_FUNC(pipe)
 {
+    (void)opt;
 }
+
 SIMPSH_FUNC(command)
 {
+    (void)opt;
 }
+
 SIMPSH_FUNC(wait)
 {
+    (void)opt;
 }
 
 SIMPSH_FUNC(verbose)
@@ -89,6 +100,7 @@ SIMPSH_FUNC(verbose)
 
 SIMPSH_FUNC(profile)
 {
+    (void)opt;
 }
 
 SIMPSH_FUNC(abort)
@@ -99,13 +111,20 @@ SIMPSH_FUNC(abort)
 
 SIMPSH_FUNC(catch)
 {
+    (void)opt;
 }
+
 SIMPSH_FUNC(ignore)
 {
+    (void)opt;
 }
+
 SIMPSH_FUNC(default)
 {
+    (void)opt;
 }
+
 SIMPSH_FUNC(pause)
 {
+    (void)opt;
 }

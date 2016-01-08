@@ -6,6 +6,7 @@
 
 typedef struct option_t
 {
+    const char* name;
     int num_args;
     char** args;
     void (*function)(struct option_t);
@@ -20,6 +21,7 @@ typedef struct option_t
 #define NUM_ACTIONABLE_OPTIONS (NUM_OPTIONS - NUM_FLAGS)
 #define ACTIONABLE_OPTION_BASE 'a'
 
+#define OFFSET_ACTIONABLE_OPTIONS NUM_FLAGS
 extern struct option long_options[NUM_OPTIONS + 1];
 
 void zero_flags();

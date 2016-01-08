@@ -73,7 +73,9 @@ bool is_valid_command(char** argv, option_t opt)
 
 option_t create_actionable_option(int val, int num_args, char** args)
 {
-    option_t opt; 
+    option_t opt;
+    opt.name = long_options[OFFSET_ACTIONABLE_OPTIONS + 
+                            (val - ACTIONABLE_OPTION_BASE)].name;
     opt.num_args = num_args;
     if (num_args > 0)
         opt.args = args;
@@ -85,5 +87,16 @@ option_t create_actionable_option(int val, int num_args, char** args)
 
 void execute_actionable_option(option_t opt)
 {
+    if (simpsh_print_verbose)
+    {
+        printf("--%s", opt.name);
+        if (opt.num_args > 0)
+        {
+            for (int i = 0; i < opt.num_args; i++)
+                printf(" %s", opt.args[i]);
+        }
+        putchar('\n'); 
+        fflush(stdout);
+    }
     opt.function(opt);
 }

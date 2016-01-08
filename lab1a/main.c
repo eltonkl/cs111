@@ -38,6 +38,11 @@ int main(int argc, char** argv)
         else if (c == 0)
         {
             //Flag was set
+            if (simpsh_print_verbose)
+            {
+                printf("--%s\n", long_options[option_index].name);
+                fflush(stdout);
+            }
             continue;
         }
         else if (c == '?')
