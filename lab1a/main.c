@@ -61,6 +61,7 @@ int main(int argc, char** argv)
                 {
                     while (optind < argc)
                     {
+                        //Consume everything until the next long option
                         if (strncmp("--", argv[optind], 2) != 0)
                         {
                             num_args++;
