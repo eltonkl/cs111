@@ -4,6 +4,8 @@
 //Function for --rdonly, --wronly, --and rdwr
 int simpsh_open(const char* file, int setting);
 
+void simpsh_pipe(int* fd1, int* fd2);
+
 //Function for --abort
 void simpsh_abort();
 

@@ -76,6 +76,7 @@ void zero_flags()
     trunc_flag = 0;
 }
 
+//There's only one option that this code is actually going to check
 bool is_valid_option(char** argv, const option_t* opt)
 {
     //If none of the options are chosen then we don't have a valid option

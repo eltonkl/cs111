@@ -42,6 +42,13 @@ int simpsh_open(const char* file, int setting)
     return fd;
 }
 
+void simpsh_pipe(int* fd1, int* fd2)
+{
+    *fd1 = 0;
+    *fd2 = 0;
+    return;
+}
+
 //Function for --abort
 void simpsh_abort()
 {

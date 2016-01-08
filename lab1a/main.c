@@ -3,9 +3,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <fcntl.h>
 
 #include "error.h"
 #include "options.h"
+#include "functions.h"
 
 int append_flag;
 int cloexec_flag;
@@ -82,6 +84,48 @@ int main(int argc, char** argv)
         bool valid = is_valid_option(argv, &opt);
         if (!valid)
             continue;
+        switch (opt.type)
+        {
+            case file_open_:
+                {
+                    int fd1, fd2, num_fds = 1;
+                    switch (opt.option)
+                    {
+                        case rdonly_:
+                            fd1 = simpsh_open(optarg, O_RDONLY);
+                            break;
+                        case wronly_:
+                            fd1 = simpsh_open(optarg, O_WRONLY);
+                            break;
+                        case rdwr_:
+                            fd1 = simpsh_open(optarg, O_RDWR);
+                            break;
+                        case pipe_:
+                            simpsh_pipe(&fd1, &fd2);
+                            num_fds = 2;
+                            break;
+                    }
+                    if (opt.option != pipe_)
+                        zero_flags();
+                    //Add to fd storage
+                }
+                break;
+            case subcommand_:
+                switch (opt.option)
+                {
+
+                }
+                break;
+            case misc_:
+                switch (opt.option)
+                {
+
+                }
+                break;
+            default:
+                ;   //suppress compiler warning.. if unexpected_ were ever hit,
+                    //we have more serious problems
+        }
     }
     return 0;
 }
