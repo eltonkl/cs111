@@ -1,4 +1,6 @@
+#ifndef _GNU_SOURCE //Fix for testing on this Ubuntu system
 #define _GNU_SOURCE
+#endif
 
 #include <unistd.h>     //close, fork, getopt_long, pipe, dup2, execvp
 #include <sys/types.h> 
@@ -7,6 +9,24 @@
 
 #include "functions.h"
 #include "options.h"
+#include "simpsh.h"
+
+void (*simpsh_functions[])(option_t opt) =
+{
+    simpsh_rdonly,
+    simpsh_wronly,
+    simpsh_rdwr,
+    simpsh_pipe,
+    simpsh_command,
+    simpsh_wait,
+    simpsh_verbose,
+    simpsh_profile,
+    simpsh_abort,
+    simpsh_catch,
+    simpsh_ignore,
+    simpsh_default,
+    simpsh_pause,
+};
 
 int simpsh_open(const char* file, int setting)
 {
@@ -42,23 +62,50 @@ int simpsh_open(const char* file, int setting)
     return fd;
 }
 
-void simpsh_pipe(int* fd1, int* fd2)
+SIMPSH_FUNC(rdonly)
 {
-    *fd1 = 0;
-    *fd2 = 0;
-    return;
+}
+SIMPSH_FUNC(wronly)
+{
+}
+SIMPSH_FUNC(rdwr)
+{
+}
+SIMPSH_FUNC(pipe)
+{
+}
+SIMPSH_FUNC(command)
+{
+}
+SIMPSH_FUNC(wait)
+{
 }
 
-//Function for --abort
-void simpsh_abort()
+SIMPSH_FUNC(verbose)
 {
-    int* x = NULL;
-    int y = *x;
-    (void)y;
+    (void)opt;
+    simpsh_print_verbose = true;
 }
 
-//Function for --verbose; return status of simpsh_verbose
-void simpsh_verbose_enable()
+SIMPSH_FUNC(profile)
 {
-    simpsh_verbose = true;
+}
+
+SIMPSH_FUNC(abort)
+{
+    (void)opt;
+    *(volatile int *)NULL = 0;
+}
+
+SIMPSH_FUNC(catch)
+{
+}
+SIMPSH_FUNC(ignore)
+{
+}
+SIMPSH_FUNC(default)
+{
+}
+SIMPSH_FUNC(pause)
+{
 }

@@ -1,23 +1,26 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
+#include "options.h"
 
 //Function for --rdonly, --wronly, --and rdwr
 int simpsh_open(const char* file, int setting);
 
-void simpsh_pipe(int* fd1, int* fd2);
+#define SIMPSH_FUNC(x) void simpsh_##x(option_t opt)
 
-//Function for --abort
-void simpsh_abort();
+SIMPSH_FUNC(rdonly);
+SIMPSH_FUNC(wronly);
+SIMPSH_FUNC(rdwr);
+SIMPSH_FUNC(pipe);
+SIMPSH_FUNC(command);
+SIMPSH_FUNC(wait);
+SIMPSH_FUNC(verbose);
+SIMPSH_FUNC(profile);
+SIMPSH_FUNC(abort);
+SIMPSH_FUNC(catch);
+SIMPSH_FUNC(ignore);
+SIMPSH_FUNC(default);
+SIMPSH_FUNC(pause);
 
-//Function for --verbose
-void simpsh_verbose_enable();
-
-//Function for --profile
-
-//Function for --catch N
-
-//Function for --ignore N
-
-//Function for --default N
+extern void (*simpsh_functions[NUM_ACTIONABLE_OPTIONS])(option_t);
 
 #endif

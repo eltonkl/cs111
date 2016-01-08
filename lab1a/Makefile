@@ -2,7 +2,7 @@ NAME = EltonLeongAndJamesWang
 OPTIMIZE =
 DEBUG = -g
 CC = gcc
-CFLAGS = $(OPTIMIZE) $(DEBUG) -Wall -Wextra -march=native -mtune=native -std=c11
+CFLAGS = $(OPTIMIZE) $(DEBUG) -Wall -Wextra -march=native -mtune=native -std=gnu11
 
 default: simpsh
 
