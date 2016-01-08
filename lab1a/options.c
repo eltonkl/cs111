@@ -129,7 +129,7 @@ bool check_valid_option(char** argv, const option_t* opt)
     //If we make it this far, then our option is indeed valid.
     return true;
 fail:
-    fprintf(stderr, "%s: invalid number of args for option -- \'%s\'\n",
+    fprintf(stderr, "%s: invalid number of args for option \'--%s\'\n",
             argv[0], long_options[error_offset + opt->option].name);
     return false;
 }

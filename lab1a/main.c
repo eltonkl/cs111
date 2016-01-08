@@ -63,6 +63,9 @@ int main(int argc, char** argv)
             else
                 opt = create_actionable_option(long_options[option_index].val, 0, 0);
             bool valid = check_valid_option(argv, &opt);
+            if (!valid)
+                continue;
+
         }
     }
     return 0;
