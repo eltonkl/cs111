@@ -25,7 +25,8 @@ bool simpsh_get_fd(int number, int* fd_storage)
 {
     if (number < 0 || number > simpsh_num_fds)
         return false;
-    *fd_storage = simpsh_fds[number];
+    if (fd_storage)
+        *fd_storage = simpsh_fds[number];
     return true;
 }
 

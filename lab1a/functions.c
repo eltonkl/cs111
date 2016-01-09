@@ -88,6 +88,7 @@ int simpsh_open(const char* file, int setting)
     flags |= setting;
 
     int fd = open(file, flags, 0644);
+    zero_flags();
     return fd;
 }
 

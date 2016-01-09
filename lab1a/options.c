@@ -6,6 +6,7 @@
 #include "options.h"
 #include "functions.h"
 #include "simpsh.h"
+#include "fds.h"
 
 struct option long_options[] =
 {
@@ -47,7 +48,21 @@ bool is_valid_command(char** argv, option_t opt)
         fprintf(stderr, "%s: invalid number of args for option \'--command\'\n", argv[0]);
         return false;
     }
-    //TODO: verify that given fd nums refer to existing file descriptors
+    for (int i = 0; i < 3; i++)
+    {
+        char* end;
+        int logical_fd_num = (int)strtol(opt.args[i], &end, 0);
+        if (end == opt.args[i])
+        {
+            fprintf(stderr, "Not a valid number: %s\n", opt.args[i]);
+            return false;
+        }
+        if (!simpsh_get_fd(logical_fd_num, NULL))
+        {
+            fprintf(stderr, "Not a valid file or pipe number: %s\n", opt.args[i]);
+            return false;
+        }
+    }
     return true;
 }
 
