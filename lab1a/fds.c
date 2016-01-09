@@ -23,7 +23,7 @@ void simpsh_init_fd_storage()
 
 bool simpsh_get_fd(int number, int* fd_storage)
 {
-    if (number < 0 || number > simpsh_num_fds)
+    if (number < 0 || number >= simpsh_num_fds)
         return false;
     if (number >= simpsh_max_fds) //this branch indicates that a realloc failed,
         //so we have more logical fds than we have real fds
