@@ -7,11 +7,6 @@
 #include "functions.h"
 #include "simpsh.h"
 
-#define OPTION_TUPLE(x, y, z) { y, x##_, z, simpsh_##x }
-#define FILE_OPEN_OPTION(x, y) OPTION_TUPLE(x, file_open_, y)
-#define SUBCOMMAND_OPTION(x, y) OPTION_TUPLE(x, subcommand_, y)
-#define MISC_OPTION(x, y) OPTION_TUPLE(x, misc_, y)
-
 struct option long_options[] =
 {
     //flags

@@ -9,24 +9,9 @@
 #include "options.h"
 #include "functions.h"
 
-int append_flag;
-int cloexec_flag;
-int creat_flag;
-int directory_flag;
-int dsync_flag;
-int excl_flag;
-int nofollow_flag;
-int nonblock_flag;
-int rsync_flag;
-int sync_flag;
-int trunc_flag;
-
-int simpsh_max_status;
-bool simpsh_print_verbose;
-
 int main(int argc, char** argv)
 {
-    zero_flags();
+    simpsh_init();
     int c;
     while (1)
     {

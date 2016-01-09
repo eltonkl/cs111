@@ -1,6 +1,8 @@
 #ifndef SIMPSH_H
 #define SIMPSH_H
 
+#include <stdbool.h>
+
 extern int  simpsh_max_status;
 extern bool simpsh_print_verbose;
 
@@ -15,5 +17,7 @@ extern int  nonblock_flag;
 extern int  rsync_flag;
 extern int  sync_flag;
 extern int  trunc_flag;
+
+void simpsh_init();
 
 #endif

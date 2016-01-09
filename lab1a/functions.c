@@ -28,6 +28,18 @@ void (*simpsh_functions[])(option_t opt) =
     simpsh_pause,
 };
 
+int append_flag;
+int cloexec_flag;
+int creat_flag;
+int directory_flag;
+int dsync_flag;
+int excl_flag;
+int nofollow_flag;
+int nonblock_flag;
+int rsync_flag;
+int sync_flag;
+int trunc_flag;
+
 int simpsh_open(const char* file, int setting)
 {
     int flags = 0;
