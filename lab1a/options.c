@@ -40,21 +40,6 @@ struct option long_options[] =
     { 0, 0, 0, 0 }
 };
 
-void zero_flags()
-{
-    append_flag = 0;
-    cloexec_flag = 0;
-    creat_flag = 0;
-    directory_flag = 0;
-    dsync_flag = 0;
-    excl_flag = 0;
-    nofollow_flag = 0;
-    nonblock_flag = 0;
-    rsync_flag = 0;
-    sync_flag = 0;
-    trunc_flag = 0;
-}
-
 bool is_valid_command(char** argv, option_t opt)
 {
     if (opt.num_args < 4)

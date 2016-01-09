@@ -2,6 +2,8 @@
 #define FUNCTIONS_H
 #include "options.h"
 
+void zero_flags();
+
 //Function for --rdonly, --wronly, --and rdwr
 int simpsh_open(const char* file, int setting);
 

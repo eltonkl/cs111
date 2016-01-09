@@ -2,7 +2,7 @@
 #define FDS_H
 
 void simpsh_init_fd_storage();
-bool get_fd(int number, int* fd_storage);
-void add_fd(int fd);
+bool simpsh_get_fd(int number, int* fd_storage);
+void simpsh_add_fd(int fd);
 
 #endif

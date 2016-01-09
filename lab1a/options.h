@@ -24,7 +24,6 @@ typedef struct option_t
 #define OFFSET_ACTIONABLE_OPTIONS NUM_FLAGS
 extern struct option long_options[NUM_OPTIONS + 1];
 
-void zero_flags();
 bool is_valid_command(char** argv, option_t opt);
 option_t create_actionable_option(int val, int num_args, char** args);
 void execute_actionable_option(option_t opt);

@@ -1,6 +1,6 @@
 #include "simpsh.h"
-#include "options.h"
 #include "fds.h"
+#include "functions.h"
 
 int simpsh_max_status;
 bool simpsh_print_verbose;

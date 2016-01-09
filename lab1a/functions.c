@@ -2,6 +2,7 @@
 #define _GNU_SOURCE
 #endif
 
+#include <stdio.h>
 #include <unistd.h>     //close, fork, getopt_long, pipe, dup2, execvp
 #include <sys/types.h> 
 #include <sys/stat.h>
@@ -10,6 +11,7 @@
 #include "functions.h"
 #include "options.h"
 #include "simpsh.h"
+#include "fds.h"
 
 void (*simpsh_functions[])(option_t opt) =
 {
@@ -39,6 +41,21 @@ int nonblock_flag;
 int rsync_flag;
 int sync_flag;
 int trunc_flag;
+
+void zero_flags()
+{
+    append_flag = 0;
+    cloexec_flag = 0;
+    creat_flag = 0;
+    directory_flag = 0;
+    dsync_flag = 0;
+    excl_flag = 0;
+    nofollow_flag = 0;
+    nonblock_flag = 0;
+    rsync_flag = 0;
+    sync_flag = 0;
+    trunc_flag = 0;
+}
 
 int simpsh_open(const char* file, int setting)
 {
@@ -76,17 +93,26 @@ int simpsh_open(const char* file, int setting)
 
 SIMPSH_FUNC(rdonly)
 {
-    (void)opt;
+    int fd = simpsh_open(opt.args[0], O_RDONLY);
+    if (fd == -1)
+        fprintf(stderr, "Failed to open read only file %s\n", opt.args[0]);
+    simpsh_add_fd(fd);
 }
 
 SIMPSH_FUNC(wronly)
 {
-    (void)opt;
+    int fd = simpsh_open(opt.args[0], O_WRONLY);
+    if (fd == -1)
+        fprintf(stderr, "Failed to open write only file %s\n", opt.args[0]);
+    simpsh_add_fd(fd);
 }
 
 SIMPSH_FUNC(rdwr)
 {
-    (void)opt;
+    int fd = simpsh_open(opt.args[0], O_RDWR);
+    if (fd == -1)
+        fprintf(stderr, "Failed to open read/write file %s\n", opt.args[0]);
+    simpsh_add_fd(fd);
 }
 
 SIMPSH_FUNC(pipe)

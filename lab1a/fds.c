@@ -21,7 +21,7 @@ void simpsh_init_fd_storage()
         simpsh_max_fds = 1;
 }
 
-bool get_fd(int number, int* fd_storage)
+bool simpsh_get_fd(int number, int* fd_storage)
 {
     if (number < 0 || number > simpsh_num_fds)
         return false;
@@ -29,7 +29,7 @@ bool get_fd(int number, int* fd_storage)
     return true;
 }
 
-void add_fd(int fd)
+void simpsh_add_fd(int fd)
 {
     simpsh_num_fds++;
     if (simpsh_num_fds > simpsh_max_fds)
