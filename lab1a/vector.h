@@ -1,17 +1,21 @@
 #ifndef VECTOR_H
 #define VECTOR_H
 
-typedef struct vector
+#include "options.h"
+
+typedef struct command_vector
 {
-    int* data;
+    int* pid_data;
+    struct option_t* command_data; 
     int cur;
     int max;
-} *vector_t;
+} *command_vector_t;
 
-vector_t simpsh_vector_create();
-bool simpsh_vector_get_elem(vector_t vec, int index, int* storage);
-bool simpsh_vector_insert(vector_t vec, int item);
-int simpsh_vector_get_count(vector_t vec);
-void simpsh_vector_delete(vector_t vec);
+command_vector_t simpsh_command_vector_create();
+bool simpsh_command_vector_get_data(command_vector_t vec, int index, int* pid_storage, option_t* command_storage);
+bool simpsh_command_vector_insert(command_vector_t vec, int pid, option_t command);
+int simpsh_command_vector_get_count(command_vector_t vec);
+void simpsh_command_vector_remove_by_index(command_vector_t vec, int index);
+void simpsh_command_vector_delete(command_vector_t vec);
 
 #endif

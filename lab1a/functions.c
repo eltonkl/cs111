@@ -7,6 +7,7 @@
 #include <unistd.h>     //close, fork, getopt_long, pipe, dup2, execvp
 #include <sys/types.h> 
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <fcntl.h>      //open and creat
 
 #include "functions.h"
@@ -99,7 +100,7 @@ SIMPSH_FUNC(rdonly)
     int fd = simpsh_open(opt.args[0], O_RDONLY);
     if (fd == -1)
         fprintf(stderr, "Failed to open read only file %s\n", opt.args[0]);
-    simpsh_add_fd(fd);
+    simpsh_add_fd(fd, SIMPSH_FILE);
 }
 
 SIMPSH_FUNC(wronly)
@@ -107,7 +108,7 @@ SIMPSH_FUNC(wronly)
     int fd = simpsh_open(opt.args[0], O_WRONLY);
     if (fd == -1)
         fprintf(stderr, "Failed to open write only file %s\n", opt.args[0]);
-    simpsh_add_fd(fd);
+    simpsh_add_fd(fd, SIMPSH_FILE);
 }
 
 SIMPSH_FUNC(rdwr)
@@ -115,26 +116,84 @@ SIMPSH_FUNC(rdwr)
     int fd = simpsh_open(opt.args[0], O_RDWR);
     if (fd == -1)
         fprintf(stderr, "Failed to open read/write file %s\n", opt.args[0]);
-    simpsh_add_fd(fd);
+    simpsh_add_fd(fd, SIMPSH_FILE);
 }
 
 SIMPSH_FUNC(pipe)
 {
     (void)opt;
+    int fds[2];
+    if (pipe(fds) == -1)
+    {
+        fprintf(stderr, "Failed to create pipe\n");
+        fds[0] = -1;
+        fds[1] = -1;
+    }
+    simpsh_add_fd(fds[0], SIMPSH_PIPE_READ);
+    simpsh_add_fd(fds[1], SIMPSH_PIPE_WRITE);
 }
 
 SIMPSH_FUNC(command)
 {
     int pid = fork();
+    int new_stdin_logical_fd_num = (int)strtol(opt.args[0], NULL, 0);
+    int new_stdout_logical_fd_num = (int)strtol(opt.args[1], NULL, 0);
+    int new_stderr_logical_fd_num = (int)strtol(opt.args[2], NULL, 0);
+    int stdin_fd, stdout_fd, stderr_fd;
+    simpsh_file_type stdin_type, stdout_type, stderr_type;
+
+    simpsh_get_fd(new_stdin_logical_fd_num, &stdin_fd, &stdin_type);
+    simpsh_get_fd(new_stdout_logical_fd_num, &stdout_fd, &stdout_type);
+    simpsh_get_fd(new_stderr_logical_fd_num, &stderr_fd, &stderr_type);
+
     if (pid == 0)
-    {
-        int new_stdin_logical_fd_num = (int)strtol(opt.args[0], NULL, 0);
-        int new_stdout_logical_fd_num  = (int)strtol(opt.args[1], NULL, 0);
-        int new_stderr_logical_fd_num = (int)strtol(opt.args[2], NULL, 0);
-        int stdin_fd, stdout_fd, stderr_fd;
-        simpsh_get_fd(new_stdin_logical_fd_num, &stdin_fd);
-        simpsh_get_fd(new_stdout_logical_fd_num, &stdout_fd);
-        simpsh_get_fd(new_stderr_logical_fd_num, &stderr_fd);
+    {               
+        if(stdin_type == SIMPSH_PIPE_WRITE)
+        {
+            fprintf(stderr, "Failure: attempt to assign write pipe to stdin\n");
+            exit(1);
+        }
+        else if (stdin_type == SIMPSH_PIPE_READ)
+        {
+            int write_fd;
+            if (simpsh_get_fd(new_stdin_logical_fd_num + 1, &write_fd, NULL))
+            {
+                if (close(write_fd) == -1)
+                    fprintf(stderr, "Failed to close write pipe\n");
+            }
+            simpsh_invalidate_fd(new_stdin_logical_fd_num + 1);
+        }
+        if(stdout_type == SIMPSH_PIPE_READ)
+        {
+            fprintf(stderr, "Failure: attempt to assign read pipe to stdout\n");
+            exit(1);
+        }
+        else if (stdout_type == SIMPSH_PIPE_WRITE)
+        {
+            int read_fd;
+            if (simpsh_get_fd(new_stdout_logical_fd_num - 1, &read_fd, NULL))
+            {
+                if (close(read_fd) == -1)
+                    fprintf(stderr, "Failed to close read pipe\n");
+            }
+            simpsh_invalidate_fd(new_stdout_logical_fd_num - 1);
+        }
+        if(stderr_type == SIMPSH_PIPE_READ)
+        {
+            fprintf(stderr, "Failure: attempt to assign read pipe to stderr\n");
+            exit(1);
+        }
+        else if (stderr_type == SIMPSH_PIPE_WRITE)
+        {
+            int read_fd;
+            if (simpsh_get_fd(new_stderr_logical_fd_num - 1, &read_fd, NULL))
+            {
+                if (close(read_fd) == -1)
+                    fprintf(stderr, "Failed to close read pipe\n");
+            }
+            simpsh_invalidate_fd(new_stderr_logical_fd_num - 1);
+        }
+        
         if (dup2(stdin_fd, 0) == -1)
         {
             fprintf(stderr, "Failed to redirect stdin\n");
@@ -170,7 +229,7 @@ SIMPSH_FUNC(command)
     }
     else
     {
-        if (simpsh_vector_insert(simpsh_pids, pid) == false)
+        if (simpsh_command_vector_insert(simpsh_commands, pid, opt) == false)
             fprintf(stderr, "Failed to allocate storage to hold pid %i, unable to wait for it\n", pid);
     }
 }
@@ -178,6 +237,70 @@ SIMPSH_FUNC(command)
 SIMPSH_FUNC(wait)
 {
     (void)opt;
+    if (simpsh_command_vector_get_count(simpsh_commands) > 0)
+    {
+        for (int i = 0; i < simpsh_command_vector_get_count(simpsh_commands); i++)
+        {
+            option_t command;
+            if (simpsh_command_vector_get_data(simpsh_commands, i, NULL, &command) == false)
+            {
+                fprintf(stderr, "Something went wrong with option '--wait'\n");
+                return;
+            }
+
+            int new_stdin_logical_fd_num = (int)strtol(command.args[0], NULL, 0);
+            int new_stdout_logical_fd_num = (int)strtol(command.args[1], NULL, 0);
+            int new_stderr_logical_fd_num = (int)strtol(command.args[2], NULL, 0);
+            int stdin_fd, stdout_fd, stderr_fd;
+            simpsh_file_type stdin_type, stdout_type, stderr_type;
+
+            simpsh_get_fd(new_stdin_logical_fd_num, &stdin_fd, &stdin_type);
+            simpsh_get_fd(new_stdout_logical_fd_num, &stdout_fd, &stdout_type);
+            simpsh_get_fd(new_stderr_logical_fd_num, &stderr_fd, &stderr_type);
+
+            if (stdin_type == SIMPSH_PIPE_READ)
+            {
+                close(stdin_fd);
+                simpsh_invalidate_fd(new_stdin_logical_fd_num);
+            }
+            if (stdout_type == SIMPSH_PIPE_WRITE)
+            {
+                close(stdout_fd);
+                simpsh_invalidate_fd(new_stdout_logical_fd_num);
+            }
+            if (stderr_type == SIMPSH_PIPE_WRITE)
+            {
+                close(stderr_fd);
+                simpsh_invalidate_fd(new_stderr_logical_fd_num);
+            }
+        }
+    }
+    while (simpsh_command_vector_get_count(simpsh_commands) > 0)
+    {
+        for (int i = 0; i < simpsh_command_vector_get_count(simpsh_commands); i++)
+        {
+            int pid = -1;
+            option_t command;
+            if (simpsh_command_vector_get_data(simpsh_commands, i, &pid, &command) == false)
+            {
+                fprintf(stderr, "Something went wrong with option '--wait'\n");
+                return;
+            }
+            int status;
+            if (waitpid(pid, &status, WNOHANG) == pid)
+            {
+                printf("%i %s", WEXITSTATUS(status), command.args[3]);
+                if (command.num_args > 4)
+                {
+                    for (int i = 4; i < command.num_args; i++)
+                        printf(" %s", command.args[i]);
+                }
+                putchar('\n');
+                simpsh_command_vector_remove_by_index(simpsh_commands, i);
+                break;
+            }
+        }
+    }
 }
 
 SIMPSH_FUNC(verbose)

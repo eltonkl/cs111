@@ -57,7 +57,7 @@ bool is_valid_command(char** argv, option_t opt)
             fprintf(stderr, "Option \'--command\' failed: not a valid number: %s\n", opt.args[i]);
             return false;
         }
-        if (!simpsh_get_fd(logical_fd_num, NULL))
+        if (!simpsh_get_fd(logical_fd_num, NULL, NULL))
         {
             fprintf(stderr, "Option \'--command\' failed: not a valid file or pipe number: %s\n", opt.args[i]);
             return false;

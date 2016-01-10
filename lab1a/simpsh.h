@@ -4,21 +4,21 @@
 #include <stdbool.h>
 #include "vector.h"
 
-extern int      simpsh_max_status;
-extern bool     simpsh_print_verbose;
-extern vector_t simpsh_pids;
+extern int              simpsh_max_status;
+extern bool             simpsh_print_verbose;
+extern command_vector_t simpsh_commands;
 
-extern int      append_flag;
-extern int      cloexec_flag;
-extern int      creat_flag;
-extern int      directory_flag;
-extern int      dsync_flag;
-extern int      excl_flag;
-extern int      nofollow_flag;
-extern int      nonblock_flag;
-extern int      rsync_flag;
-extern int      sync_flag;
-extern int      trunc_flag;
+extern int              append_flag;
+extern int              cloexec_flag;
+extern int              creat_flag;
+extern int              directory_flag;
+extern int              dsync_flag;
+extern int              excl_flag;
+extern int              nofollow_flag;
+extern int              nonblock_flag;
+extern int              rsync_flag;
+extern int              sync_flag;
+extern int              trunc_flag;
 
 void simpsh_init();
 void simpsh_finish();
