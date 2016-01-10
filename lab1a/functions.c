@@ -134,8 +134,7 @@ SIMPSH_FUNC(pipe)
 }
 
 SIMPSH_FUNC(command)
-{
-    int pid = fork();
+{ 
     int new_stdin_logical_fd_num = (int)strtol(opt.args[0], NULL, 0);
     int new_stdout_logical_fd_num = (int)strtol(opt.args[1], NULL, 0);
     int new_stderr_logical_fd_num = (int)strtol(opt.args[2], NULL, 0);
@@ -146,6 +145,7 @@ SIMPSH_FUNC(command)
     simpsh_get_fd(new_stdout_logical_fd_num, &stdout_fd, &stdout_type);
     simpsh_get_fd(new_stderr_logical_fd_num, &stderr_fd, &stderr_type);
 
+    int pid = fork();
     if (pid == 0)
     {               
         if(stdin_type == SIMPSH_PIPE_WRITE)
@@ -209,6 +209,9 @@ SIMPSH_FUNC(command)
             fprintf(stderr, "Failed to redirect stderr\n");
             exit(1);
         }
+        close(stdin_fd);
+        close(stdout_fd);
+        close(stderr_fd);
 
         int args_to_program = opt.num_args - 4;
         char** args = (char**)malloc(sizeof(char*) * (args_to_program + 2));
@@ -222,10 +225,7 @@ SIMPSH_FUNC(command)
             args[1 + i] = opt.args[4 + i];
         args[args_to_program + 1] = NULL;
         if (execvp(args[0], args) == -1)
-        {
-            fprintf(stderr, "execvp failed\n");
             exit(1);
-        }
     }
     else
     {
