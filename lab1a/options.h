@@ -27,5 +27,6 @@ extern struct option long_options[NUM_OPTIONS + 1];
 bool is_valid_command(char** argv, option_t opt);
 option_t create_actionable_option(int val, int num_args, char** args);
 void execute_actionable_option(option_t opt);
+void print_actionable_option_with_args(option_t opt);
 
 #endif

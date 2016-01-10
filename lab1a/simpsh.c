@@ -12,3 +12,8 @@ void simpsh_init()
     simpsh_max_status = 0;
     simpsh_print_verbose = false;
 }
+
+void simpsh_finish()
+{
+    simpsh_finish_fd_storage();
+}

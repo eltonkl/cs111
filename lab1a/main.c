@@ -75,5 +75,6 @@ int main(int argc, char** argv)
             opt = create_actionable_option(c, 0, 0);
         execute_actionable_option(opt);
     }
+    simpsh_finish();
     return 0;
 }

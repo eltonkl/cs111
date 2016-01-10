@@ -3,6 +3,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>     //close, fork, getopt_long, pipe, dup2, execvp
 #include <sys/types.h> 
 #include <sys/stat.h>
@@ -123,7 +124,49 @@ SIMPSH_FUNC(pipe)
 
 SIMPSH_FUNC(command)
 {
-    (void)opt;
+    int pid = fork();
+    if (pid == 0)
+    {
+        int new_stdin_logical_fd_num = (int)strtol(opt.args[0], NULL, 0);
+        int new_stdout_logical_fd_num  = (int)strtol(opt.args[1], NULL, 0);
+        int new_stderr_logical_fd_num = (int)strtol(opt.args[2], NULL, 0);
+        int stdin_fd, stdout_fd, stderr_fd;
+        simpsh_get_fd(new_stdin_logical_fd_num, &stdin_fd);
+        simpsh_get_fd(new_stdout_logical_fd_num, &stdout_fd);
+        simpsh_get_fd(new_stderr_logical_fd_num, &stderr_fd);
+        if (dup2(stdin_fd, 0) == -1)
+        {
+            fprintf(stderr, "Failed to redirect stdin\n");
+            exit(1);
+        }
+        if (dup2(stdout_fd, 1) == -1)
+        {
+            fprintf(stderr, "Failed to redirect stdout\n");
+            exit(1);
+        }
+        if (dup2(stderr_fd, 2) == -1)
+        {
+            fprintf(stderr, "Failed to redirect stderr\n");
+            exit(1);
+        }
+
+        int args_to_program = opt.num_args - 4;
+        char** args = (char**)malloc(sizeof(char*) * (args_to_program + 2));
+        if (!args)
+        {
+            fprintf(stderr, "Failed to alloc memory for args\n");
+            exit(1);
+        }
+        args[0] = opt.args[3];
+        for (int i = 0; i < args_to_program; i++)
+            args[1 + i] = opt.args[4 + i];
+        args[args_to_program + 1] = NULL;
+        if (execvp(args[0], args) == -1)
+        {
+            fprintf(stderr, "execvp failed\n");
+            exit(1);
+        }
+    }
 }
 
 SIMPSH_FUNC(wait)

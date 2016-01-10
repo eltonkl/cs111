@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "simpsh.h"
 
@@ -14,7 +15,7 @@ void simpsh_init_fd_storage()
     simpsh_fds = (int *)malloc(sizeof(int));
     if (!simpsh_fds)
     {
-        fprintf(stderr, "Failed to allocate storage for file descriptors");
+        fprintf(stderr, "Failed to allocate storage for file descriptors\n");
         simpsh_max_fds = 0;
     }
     else
@@ -50,10 +51,25 @@ void simpsh_add_fd(int fd)
         int* result = (int *)realloc(simpsh_fds, simpsh_max_fds * sizeof(int));
         if (result == NULL)
         {
-            fprintf(stderr, "Failed to allocate storage for file descriptors");
+            fprintf(stderr, "Failed to allocate storage for file descriptors\n");
             return;
         }
         simpsh_fds = result;
+        for (int i = simpsh_num_fds; i < simpsh_max_fds; i++)
+            simpsh_fds[i] = -1;
     }
     simpsh_fds[simpsh_num_fds - 1] = fd;
+}
+
+void simpsh_finish_fd_storage()
+{
+    for (int i = 0; i < simpsh_num_fds; i++)
+    {
+        if (simpsh_fds[i] != -1)
+        {
+            if (close(simpsh_fds[i]) == -1)
+                fprintf(stderr, "Failed to close a file\n");
+        }
+    }
+    free(simpsh_fds);
 }

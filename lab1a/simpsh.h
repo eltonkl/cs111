@@ -19,5 +19,6 @@ extern int  sync_flag;
 extern int  trunc_flag;
 
 void simpsh_init();
+void simpsh_finish();
 
 #endif
