@@ -13,6 +13,7 @@
 #include "options.h"
 #include "simpsh.h"
 #include "fds.h"
+#include "vector.h"
 
 void (*simpsh_functions[])(option_t opt) =
 {
@@ -166,6 +167,11 @@ SIMPSH_FUNC(command)
             fprintf(stderr, "execvp failed\n");
             exit(1);
         }
+    }
+    else
+    {
+        if (simpsh_vector_insert(simpsh_pids, pid) == false)
+            fprintf(stderr, "Failed to allocate storage to hold pid %i, unable to wait for it\n", pid);
     }
 }
 

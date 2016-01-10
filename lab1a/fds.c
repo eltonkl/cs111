@@ -61,14 +61,14 @@ void simpsh_add_fd(int fd)
     simpsh_fds[simpsh_num_fds - 1] = fd;
 }
 
-void simpsh_finish_fd_storage()
+void simpsh_delete_fd_storage()
 {
     for (int i = 0; i < simpsh_num_fds; i++)
     {
         if (simpsh_fds[i] != -1)
         {
             if (close(simpsh_fds[i]) == -1)
-                fprintf(stderr, "Failed to close a file\n");
+                fprintf(stderr, "Failed to close a file or pipe\n");
         }
     }
     free(simpsh_fds);
