@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -18,8 +18,8 @@
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
   </head>
-  <body role="document">
-    <div class="container" role="main">
+  <body>
+    <div class="container">
         <div class="page-header">
             <h1>Table of Contents</h1>
         </div>
@@ -46,17 +46,17 @@
             <h1>I. A bit more philosophy</h1>
         </div>
         <p>
-            Tradeoffs and scaling are not new issues&#151;they've been with us for a long time<br />
+            Tradeoffs and scaling are not new issues&mdash;they've been with us for a long time<br />
             Complexity is one more issue, and it's one he didn't talk about last lecture<br />
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Moore's Law (transistors/chip) observes the exponential growth in # of transistors on chips. It's been occurring for decades; however, it is now beginning to slow down<br />
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="images/moores.svg" /> <br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="images/moores.svg" alt="Graph displaying exponential growth"/> <br />
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Kryder's Law (bytes/drive) observes that secondary storage capacity has also experienced exponential growth<br />
             Why has exponential growth occurred?<br />
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The UNIVAC I, one of the first computers, was hand designed, slow, and safe<br />
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;There was a huge amount of error correction circuitry built into the computer to make sure it worked<br />
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The designers used the UNIVAC I to design the UNIVAC II by running simulations of the II on the I<br />
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Eggert described this with the following calculus:<br />
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="images/calc.gif" title="\frac{d}{dt}(technology) = k \cdot technology" />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="images/calc.gif" title="\frac{d}{dt}(technology) = k \cdot technology" alt="\frac{d}{dt}(technology) = k \cdot technology"/>
         </p>
         <div class="page-header" id="hownotos">
             <h1>II. How not to do an OS</h1>
@@ -96,7 +96,7 @@
         <p style="margin-left:2.5em;">
             Built into the hardware<br />
             Upon turning on the computer, the instruction pointer is set to 0xFFFF0, 2^20 - 16<br />
-            When the processor tries to look at this area of RAM, the request is redirected to some <strike>ROM</strike> (better idea -> nonvolatile memory) region containing instructions hardwired by the manufacturer to do whatever we want it to do<br />
+            When the processor tries to look at this area of RAM, the request is redirected to some <del>ROM</del> (better idea -> nonvolatile memory) region containing instructions hardwired by the manufacturer to do whatever we want it to do<br />
             Ask the manufacturer to put the word count program in the ROM, which is expensive, takes time, costs money, etc. <br />
             Modern solution is to put EEPROM in the computer instead
         </p>
