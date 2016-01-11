@@ -1,7 +1,12 @@
-body {
-    
-}
-
 .container {
       width: auto;
+}
+
+.code {
+      font-family:Courier New, Courier, monospace;
+}
+
+p {
+      line-height: 1.65;
+      margin-bottom:0px;
 }
