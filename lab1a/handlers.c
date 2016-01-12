@@ -104,19 +104,19 @@ SIMPSH_HANDLER(rdonly)
     simpsh_add_fd(fd, SIMPSH_FILE);
 }
 
-SIMPSH_HANDLER(wronly)
-{
-    int fd = simpsh_open(opt.args[0], O_WRONLY);
-    if (fd == -1)
-        fprintf(stderr, "Failed to open write only file %s\n", opt.args[0]);
-    simpsh_add_fd(fd, SIMPSH_FILE);
-}
-
 SIMPSH_HANDLER(rdwr)
 {
     int fd = simpsh_open(opt.args[0], O_RDWR);
     if (fd == -1)
         fprintf(stderr, "Failed to open read/write file %s\n", opt.args[0]);
+    simpsh_add_fd(fd, SIMPSH_FILE);
+}
+
+SIMPSH_HANDLER(wronly)
+{
+    int fd = simpsh_open(opt.args[0], O_WRONLY);
+    if (fd == -1)
+        fprintf(stderr, "Failed to open write only file %s\n", opt.args[0]);
     simpsh_add_fd(fd, SIMPSH_FILE);
 }
 
@@ -144,76 +144,31 @@ SIMPSH_HANDLER(command)
     simpsh_get_fd(stdout_logical_fd, &stdout_fd);
     simpsh_get_fd(stderr_logical_fd, &stderr_fd);
     
-    //Fork the pipes and later account for potential bugs
+    //Fork the pipes, deal with edge cases involving pipes in the child and
+    //parent separately
     int pid = fork();
     if (pid == 0)
     {               
-        if (stdin_fd.type == SIMPSH_PIPE_READ)
-        {
-            fd_t write_fd;
-            if (simpsh_get_fd(stdin_logical_fd + 1, &write_fd))
-            {
-                if (close(write_fd.fd) == -1)
-                    fprintf(stderr, "Failed to close write pipe\n");
-            }
-            simpsh_invalidate_fd(stdin_logical_fd + 1);
-        }
-        else if (stdin_fd.type == SIMPSH_PIPE_WRITE)
+        if (stdin_fd.type == SIMPSH_PIPE_WRITE)
             fprintf(stderr, "Warning: attempt to assign write pipe to stdin\n");
-        if (stdout_fd.type == SIMPSH_PIPE_WRITE)
-        {
-            fd_t read_fd;
-            if (simpsh_get_fd(stdout_logical_fd - 1, &read_fd))
-            {
-                if (close(read_fd.fd) == -1)
-                    fprintf(stderr, "Failed to close read pipe\n");
-            }
-            simpsh_invalidate_fd(stdout_logical_fd - 1);
-        }
-        else if (stdout_fd.type == SIMPSH_PIPE_READ)
+        if (stdout_fd.type == SIMPSH_PIPE_READ)
             fprintf(stderr, "Warning: attempt to assign read pipe to stdout\n");
-        if (stderr_fd.type == SIMPSH_PIPE_WRITE)
-        {
-            fd_t read_fd;
-            if (simpsh_get_fd(stderr_logical_fd - 1, &read_fd))
-            {
-                if (close(read_fd.fd) == -1)
-                    fprintf(stderr, "Failed to close read pipe\n");
-            }
-            simpsh_invalidate_fd(stderr_logical_fd - 1);
-        }
-        else if (stderr_fd.type == SIMPSH_PIPE_READ)
+        if (stderr_fd.type == SIMPSH_PIPE_READ)
             fprintf(stderr, "Warning: attempt to assign read pipe to stderr\n");
         
         if (dup2(stdin_fd.fd, 0) == -1)
-        {
             fprintf(stderr, "Failed to redirect stdin\n");
-            exit(1);
-        }
         if (dup2(stdout_fd.fd, 1) == -1)
-        {
             fprintf(stderr, "Failed to redirect stdout\n");
-            exit(1);
-        }
         if (dup2(stderr_fd.fd, 2) == -1)
-        {
             fprintf(stderr, "Failed to redirect stderr\n");
-            exit(1);
-        }
-        close(stdin_fd.fd);
-        close(stdout_fd.fd);
-        close(stderr_fd.fd);
+
+        //Close all open file descriptors to prevent leaking fds
+        for (int i = 0; i < simpsh_num_fds; i++)
+            simpsh_invalidate_fd(i);
 
         int args_to_program = opt.num_args - 4;
-        char** args = (char**)malloc(sizeof(char*) * (args_to_program + 2));
-        if (!args)
-        {
-            fprintf(stderr, "Failed to alloc memory for args\n");
-            exit(1);
-        }
-        args[0] = opt.args[3];
-        for (int i = 0; i < args_to_program; i++)
-            args[1 + i] = opt.args[4 + i];
+        char** args = &opt.args[3];
         args[args_to_program + 1] = NULL;
         if (execvp(args[0], args) == -1)
             exit(1);
@@ -224,20 +179,11 @@ SIMPSH_HANDLER(command)
         //So, in order to prevent pipes from stalling the execution of the program we close them
         //We invalidate after this so that the child's pipe end is safe from other attempts
         if (stdin_fd.type == SIMPSH_PIPE_READ)
-        {
-            close(stdin_fd.fd);
             simpsh_invalidate_fd(stdin_logical_fd);
-        }
         if (stdout_fd.type == SIMPSH_PIPE_WRITE)
-        {
-            close(stdout_fd.fd);
             simpsh_invalidate_fd(stdout_logical_fd);
-        }
         if (stderr_fd.type == SIMPSH_PIPE_WRITE)
-        {
-            close(stderr_fd.fd);
             simpsh_invalidate_fd(stderr_logical_fd);
-        }
         simpsh_add_command(pid, opt, false);
     }
 }
@@ -298,15 +244,27 @@ static void catch_handler(int signo)
     exit(signo);
 }
 
-SIMPSH_HANDLER(catch)
+static bool get_arg_as_number(option_t opt, int* num)
 {
     char* end;
-    int num = (int)strtol(opt.args[0], &end, 0);
+    if (num)
+        *num = (int)strtol(opt.args[0], &end, 0);
+    else
+        strtol(opt.args[0], &end, 0);
     if (end == opt.args[0])
     {
-        fprintf(stderr, "Option \'--catch\' failed: not a valid number: %s\n", opt.args[0]);
-        return;
+        fprintf(stderr, "Option \'--%s\' failed: not a valid number: %s\n", opt.name, opt.args[0]);
+        return false;
     }
+    return true;
+}
+
+SIMPSH_HANDLER(catch)
+{
+    int num;
+    if (!get_arg_as_number(opt, &num))
+        return;
+
     struct sigaction sa;
     sa.sa_handler = catch_handler;
     if (sigaction(num, &sa, NULL) == -1)
@@ -315,26 +273,20 @@ SIMPSH_HANDLER(catch)
 
 SIMPSH_HANDLER(ignore)
 {
-    char* end;
-    int num = (int)strtol(opt.args[0], &end, 0);
-    if (end == opt.args[0])
-    {
-        fprintf(stderr, "Option \'--ignore\' failed: not a valid number: %s\n", opt.args[0]);
+    int num;
+    if (!get_arg_as_number(opt, &num))
         return;
-    }
+
     if (signal(num, SIG_IGN) == SIG_ERR)
         fprintf(stderr, "Failed to ignore signal %i\n", num);
 }
 
 SIMPSH_HANDLER(default)
 {
-    char* end;
-    int num = (int)strtol(opt.args[0], &end, 0);
-    if (end == opt.args[0])
-    {
-        fprintf(stderr, "Option \'--default\' failed: not a valid number: %s\n", opt.args[0]);
+    int num;
+    if (!get_arg_as_number(opt, &num))
         return;
-    }
+
     if (signal(num, SIG_DFL) == SIG_ERR)
         fprintf(stderr, "Failed to reset signal handler to default behavior for signal %i\n", num);
 }

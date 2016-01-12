@@ -67,9 +67,8 @@ void simpsh_add_command(int pid, option_t command, bool done)
 
 bool simpsh_get_fd(int index, fd_t* storage)
 {
-    if (index < 0 || index >= simpsh_num_fds)
-        return false;
-    if (simpsh_fds == NULL || simpsh_fds[index].type == SIMPSH_CLOSED)
+    if (index < 0 || index >= simpsh_num_fds || 
+        simpsh_fds == NULL || simpsh_fds[index].type == SIMPSH_CLOSED)
     {
         fd_t fd = { -1, SIMPSH_CLOSED };
         *storage = fd;
@@ -97,6 +96,9 @@ void simpsh_invalidate_fd(int index)
         return;
     if (simpsh_fds == NULL)
         return;
+    if (simpsh_fds[index].type == SIMPSH_CLOSED)
+        return;
+    close(simpsh_fds[index].fd);
     simpsh_fds[index].type = SIMPSH_CLOSED;
 }
 
@@ -118,14 +120,7 @@ void simpsh_init(int argc, char** argv)
 void simpsh_finish()
 {
     for (int i = 0; i < simpsh_num_fds; i++)
-    {
-        fd_t fd;
-        if (simpsh_get_fd(i, &fd))
-        {
-            close(fd.fd);
-            simpsh_invalidate_fd(i);
-        }
-    }
+        simpsh_invalidate_fd(i);
 
     for (int i = 0; i < simpsh_num_commands; i++)
     {

@@ -10,8 +10,8 @@ int simpsh_open(const char* file, int setting);
 #define SIMPSH_HANDLER(x) void simpsh_##x(option_t opt)
 
 SIMPSH_HANDLER(rdonly);
-SIMPSH_HANDLER(wronly);
 SIMPSH_HANDLER(rdwr);
+SIMPSH_HANDLER(wronly);
 SIMPSH_HANDLER(pipe);
 SIMPSH_HANDLER(command);
 SIMPSH_HANDLER(wait);
