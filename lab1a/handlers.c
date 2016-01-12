@@ -238,32 +238,33 @@ SIMPSH_HANDLER(command)
 SIMPSH_HANDLER(wait)
 {
     (void)opt;
-    while (true)
+    int start_num_commands = 0;
+    for (int i = 0; i < simpsh_num_commands; i++, start_num_commands++)
     {
-        bool all_done = true;
-        for (int i = 0; i < simpsh_num_commands; i++)
-        {
-            command_t command;
-            simpsh_get_command(i, &command);
-            if (command.done)
-                continue;
-            all_done = false;
-            int status;
-            if (waitpid(command.pid, &status, WNOHANG) == command.pid)
-            {
-                printf("%i %s", WEXITSTATUS(status), command.command.args[3]);
-                if (command.command.num_args > 4)
-                {
-                    for (int i = 4; i < command.command.num_args; i++)
-                        printf(" %s", command.command.args[i]);
-                }
-                putchar('\n');
-                simpsh_invalidate_command(i);
-                break;
-            }
-        }
-        if (all_done)
+        command_t command;
+        simpsh_get_command(i, &command);
+        if (!command.done)
             break;
+    }
+
+    for (int i = start_num_commands; i < simpsh_num_commands; i++)
+    {
+        command_t command;
+        simpsh_get_command(i, &command);
+        int status;
+        if (wait(&status) != -1)
+        {
+            if (WEXITSTATUS(status) > simpsh_max_status)
+                simpsh_max_status = WEXITSTATUS(status);
+            printf("%i %s", WEXITSTATUS(status), command.command.args[3]);
+            if (command.command.num_args > 4)
+            {
+                for (int i = 4; i < command.command.num_args; i++)
+                    printf(" %s", command.command.args[i]);
+            }
+            putchar('\n');
+            simpsh_invalidate_command(i);
+        }
     }
 }
 
@@ -284,22 +285,55 @@ SIMPSH_HANDLER(abort)
     *(volatile int *)NULL = 0;
 }
 
+static void catch_handler(int signo)
+{
+    fprintf(stderr, "%i caught\n", signo);
+    exit(signo);
+}
+
 SIMPSH_HANDLER(catch)
 {
-    (void)opt;
+    char* end;
+    int num = (int)strtol(opt.args[0], &end, 0);
+    if (end == opt.args[0])
+    {
+        fprintf(stderr, "Option \'--catch\' failed: not a valid number: %s\n", opt.args[0]);
+        return;
+    }
+    struct sigaction sa;
+    sa.sa_handler = catch_handler;
+    if (sigaction(num, &sa, NULL) == -1)
+        fprintf(stderr, "Failed to install signal handler for signal %i\n", num);
 }
 
 SIMPSH_HANDLER(ignore)
 {
-    (void)opt;
+    char* end;
+    int num = (int)strtol(opt.args[0], &end, 0);
+    if (end == opt.args[0])
+    {
+        fprintf(stderr, "Option \'--ignore\' failed: not a valid number: %s\n", opt.args[0]);
+        return;
+    }
+    if (signal(num, SIG_IGN) == SIG_ERR)
+        fprintf(stderr, "Failed to ignore signal %i\n", num);
 }
 
 SIMPSH_HANDLER(default)
 {
-    (void)opt;
+    char* end;
+    int num = (int)strtol(opt.args[0], &end, 0);
+    if (end == opt.args[0])
+    {
+        fprintf(stderr, "Option \'--default\' failed: not a valid number: %s\n", opt.args[0]);
+        return;
+    }
+    if (signal(num, SIG_DFL) == SIG_ERR)
+        fprintf(stderr, "Failed to reset signal handler to default behavior for signal %i\n", num);
 }
 
 SIMPSH_HANDLER(pause)
 {
     (void)opt;
+    pause();
 }

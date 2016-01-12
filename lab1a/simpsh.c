@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include "simpsh.h"
 #include "handlers.h"
@@ -125,6 +126,22 @@ void simpsh_finish()
             simpsh_invalidate_fd(i);
         }
     }
+
+    for (int i = 0; i < simpsh_num_commands; i++)
+    {
+        command_t command;
+        simpsh_get_command(i, &command);
+        if (command.done)
+            continue;
+        int status;
+        if (waitpid(command.pid, &status, 0) == command.pid)
+        {
+            if (WEXITSTATUS(status) > simpsh_max_status)
+                simpsh_max_status = WEXITSTATUS(status);
+            simpsh_invalidate_command(i);
+        }
+    }
+
     free(simpsh_commands);
     free(simpsh_fds);
 }
