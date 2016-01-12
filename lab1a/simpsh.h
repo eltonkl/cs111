@@ -2,25 +2,60 @@
 #define SIMPSH_H
 
 #include <stdbool.h>
-#include "vector.h"
+
+#include "options.h"
 
 extern int              simpsh_max_status;
 extern bool             simpsh_print_verbose;
-extern command_vector_t simpsh_commands;
 
-extern int              append_flag;
-extern int              cloexec_flag;
-extern int              creat_flag;
-extern int              directory_flag;
-extern int              dsync_flag;
-extern int              excl_flag;
-extern int              nofollow_flag;
-extern int              nonblock_flag;
-extern int              rsync_flag;
-extern int              sync_flag;
-extern int              trunc_flag;
+typedef struct command_t
+{
+    int pid;
+    option_t command;
+    bool done;
+} command_t;
 
-void simpsh_init();
+typedef enum simpsh_file_type
+{
+    SIMPSH_FILE, 
+    SIMPSH_PIPE_READ, 
+    SIMPSH_PIPE_WRITE,
+    SIMPSH_CLOSED
+} simpsh_file_type;
+
+typedef struct fd_t
+{
+    int fd;
+    simpsh_file_type type;
+} fd_t;
+
+extern int          simpsh_max_fds;
+extern int          simpsh_max_commands;
+extern int          simpsh_num_fds;
+extern int          simpsh_num_commands;
+extern fd_t*        simpsh_fds;
+extern command_t*   simpsh_commands;
+
+void simpsh_add_fd(int fd, simpsh_file_type type);
+void simpsh_add_command(int pid, option_t command, bool done);
+bool simpsh_get_fd(int index, fd_t* storage);
+bool simpsh_get_command(int index, command_t* storage);
+void simpsh_invalidate_fd(int index);
+void simpsh_invalidate_command(int index);
+
+extern int append_flag;
+extern int cloexec_flag;
+extern int creat_flag;
+extern int directory_flag;
+extern int dsync_flag;
+extern int excl_flag;
+extern int nofollow_flag;
+extern int nonblock_flag;
+extern int rsync_flag;
+extern int sync_flag;
+extern int trunc_flag;
+
+void simpsh_init(int argc, char** argv);
 void simpsh_finish();
 
 #endif

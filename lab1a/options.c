@@ -6,7 +6,6 @@
 #include "options.h"
 #include "functions.h"
 #include "simpsh.h"
-#include "fds.h"
 
 struct option long_options[] =
 {
@@ -51,15 +50,21 @@ bool is_valid_command(char** argv, option_t opt)
     for (int i = 0; i < 3; i++)
     {
         char* end;
+        fd_t fd;
         int logical_fd_num = (int)strtol(opt.args[i], &end, 0);
         if (end == opt.args[i])
         {
             fprintf(stderr, "Option \'--command\' failed: not a valid number: %s\n", opt.args[i]);
             return false;
         }
-        if (!simpsh_get_fd(logical_fd_num, NULL, NULL))
+        if (!simpsh_get_fd(logical_fd_num, &fd))
         {
             fprintf(stderr, "Option \'--command\' failed: not a valid file or pipe number: %s\n", opt.args[i]);
+            return false;
+        }
+        if (fd.type == SIMPSH_CLOSED)
+        {
+            fprintf(stderr, "Option \'--command\' failed: pipe already consumed\n");
             return false;
         }
     }

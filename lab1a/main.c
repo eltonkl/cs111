@@ -11,7 +11,7 @@
 
 int main(int argc, char** argv)
 {
-    simpsh_init();
+    simpsh_init(argc, argv);
     int c;
     while (1)
     {
@@ -54,13 +54,10 @@ int main(int argc, char** argv)
                     while (optind < argc)
                     {
                         //Consume everything until the next long option
-                        if (strncmp("--", argv[optind], 2) != 0)
-                        {
-                            num_args++;
-                            optind++;
-                        }
-                        else
+                        if (strlen(argv[optind]) > 2 && argv[optind][0] == '-' && argv[optind][1] == '-')
                             break;
+                        num_args++;
+                        optind++;
                     }
                 }
                 opt = create_actionable_option(c, num_args,
