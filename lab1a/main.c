@@ -73,5 +73,5 @@ int main(int argc, char** argv)
         execute_actionable_option(opt);
     }
     simpsh_finish();
-    return 0;
+    return simpsh_max_status;
 }
