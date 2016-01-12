@@ -14,11 +14,14 @@
 #include "options.h"
 #include "simpsh.h"
 
+//Lookup table for function handlers
+//The function pointer in our option_t struct will be set to one of these
+//In this way, we can call whatever function we need in this table and simply implement as we go 
 void (*simpsh_handlers[])(option_t opt) =
 {
     simpsh_rdonly,
-    simpsh_wronly,
     simpsh_rdwr,
+    simpsh_wronly,
     simpsh_pipe,
     simpsh_command,
     simpsh_wait,
