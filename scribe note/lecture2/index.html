@@ -18,8 +18,8 @@
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
   </head>
-  <body role="document">
-    <div class="container" role="main">
+  <body>
+    <div class="container">
         <div class="page-header">
             <h1>Table of Contents</h1>
         </div>
@@ -46,13 +46,132 @@
             <h1>I. A bit more philosophy</h1>
         </div>
         <p>
-            Blah blah blah.
+            Tradeoffs and scaling are not new issues&mdash;they've been with us for a long time<br />
+            Complexity is one more issue, and it's one he didn't talk about last lecture<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Moore's Law (transistors/chip) observes the exponential growth in # of transistors on chips. It's been occurring for decades; however, it is now beginning to slow down<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="images/moores.svg" alt="Graph displaying exponential growth"/> <br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Kryder's Law (bytes/drive) observes that secondary storage capacity has also experienced exponential growth<br />
+            Why has exponential growth occurred?<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The UNIVAC I, one of the first computers, was hand designed, slow, and safe<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;There was a huge amount of error correction circuitry built into the computer to make sure it worked<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The designers used the UNIVAC I to design the UNIVAC II by running simulations of the II on the I<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Eggert described this with the following calculus:<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="images/calc.gif" title="\frac{d}{dt}(technology) = k \cdot technology" alt="\frac{d}{dt}(technology) = k \cdot technology"/>
         </p>
         <div class="page-header" id="hownotos">
             <h1>II. How not to do an OS</h1>
         </div>
-        <div class="row">
-        </div>
+        <p>
+            Why not to use an OS?<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Simplicity<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Performance<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Speed<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Memory<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reliability (as a consequence of simplicity)<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Security (paranoia)<br />
+            Hypothetical situation: Eggert is writing a document. As a paranoid professor, he wants his application to be as simple as possible and doesn't want to use an OS to do the following task: count the number of words in an ASCII text file (bytes '\001' - '\177', 1 - 127)<br />
+        </p>
+            <table class="table">
+                <thead><tr><th>Computer specs</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td>Core i3-4160 (3 MiB cache, 3.6 GHz)</td>
+                    </tr>
+                    <tr>
+                        <td>4 GiB dual channel DDR3 1600 MHz SDRAM</td>
+                    </tr>
+                    <tr>
+                        <td>1 TB hard drive, SATA, 7200rpm</td>
+                    </tr>
+                    <tr>
+                        <td>Intel HD4400 graphics</td>
+                    </tr>
+                </tbody>
+            </table>
+        <p style="margin-bottom:0px;">
+            File is in contiguous array of sectors (512 bytes of data) on the hard drive<br />
+            Cycling power clears the CPU, cache, and RAM<br />
+            Bootstrapping problem - how do we start? Need to have something to work with in order to get started
+        </p>    
+        <p style="margin-left:2.5em;">
+            Built into the hardware<br />
+            Upon turning on the computer, the instruction pointer is set to 0xFFFF0, 2^20 - 16<br />
+            When the processor tries to look at this area of RAM, the request is redirected to some <del>ROM</del> (better idea -> nonvolatile memory) region containing instructions hardwired by the manufacturer to do whatever we want it to do<br />
+            Ask the manufacturer to put the word count program in the ROM, which is expensive, takes time, costs money, etc. <br />
+            Modern solution is to put EEPROM in the computer instead
+        </p>
+        <p style="margin-left:5em;margin-bottom:0px;">
+                    Have it know the location and size of the program on the hard disk (the manufacturer hard codes these constants)<br />
+                    Also have a loading program that will copy the program into RAM and jump into the program and start executing<br />
+        </p>
+        <p style="margin-left:2.5em;margin-bottom:0px;">
+            The convention:<br>
+        </p>
+        <p style="margin-left:5em;margin-bottom:0px;">
+            The 1st sector on the disk is the master boot record (MBR)<br />
+            The first 446 bytes of these 512 bytes will have x86 code<br />
+            The program on the EEPROM performs hardware sanity checks (CPU, RAM)<br />
+        </p>
+        <p style="margin-left:7.5em">
+            Then checks for devices, and finds the first device with an MBR<br />
+            The convention is to have the bytes 0x55 0xAA in the last 2 bits of the MBR (little endian 0xAA55)<br />
+            Copies the x86 code sector to 0x7C00 and jumps into it<br />
+        </p>
+        <p style="margin-left:5em">
+            Between the 446 bytes of code and 2 byte indicator is 64 bytes, sectioned into 4 16 byte entries<br />
+        </p>
+        <p style="margin-left:7.5em">
+            This is called the partition table (only allows for 4 partitions due to poor design)<br />
+            Each 16 bytes can fit sector counts for the offset of the partition and for the size of the partition plus other info, including type byte and whether it's bootable or not<br />
+            The MBR then loads the first sector from a bootable partition (called the VBR)<br />
+        </p>
+        <p style="margin-left:5em">
+            Chain-loading: firmware -> MBR (OS-agnostic) -> VBR (OS-specific) -> kernel (many sectors) -> your apps<br />
+        </p>
+        <p>
+            Need a subroutine to read data from the disk. The firmware, MBR, and the word count program would all use it:<br />
+        </p>
+        <pre class="code">
+/*
+The controller communicates through the buses via their registers
+0x1F0 -> read data
+0x1F2 -> sector count
+0x1F3 -> \ low order byte
+0x1F4 ->  \
+           | sector number
+0x1F5 ->  /
+0x1F6 -> / high order byte
+0x1F7 -> status and command register, contains state information for disk controller
+*/
+0x01000000 indicates ready (0xC0)
+static inline inb(int a) {
+    asm("____");
+    …
+}
+//int and char are both 4 bytes for this example
+void read_ide_sector(int sector_num, char* memory_addr) {
+    while ((inb(0x1F7) & 0xC0) != 0x40)
+        continue;
+    outb(0x1F2, 1);
+    outb(0x1F3, sector_num);
+    outb(0x1F4, sector_num >> 8);
+    outb(0x1F5, sector_num >> 16);
+    outb(0x1F6, sector_num >> 24);
+    outb(0x1F7, 0x20); //command controller to read (0x20)
+    while ((inb(0x1F7) & 0xC0) != 0x40)
+        continue;
+    insl(0x1F0, memory_addr, 128); //128 -> 512/sizeof(int)
+}
+</pre>
+<p>		Compile the above and put it into the firmware (stick in some predefined address)<br />
+		OR<br />
+		Copy in the MBR @ 0x7C21<br />
+		OR<br />
+Put into the word count program<br />
+        <br />
+    Code duplication can be bad, take the first option and just shove it into the firmware (which we call the BIOS, or basic input/output system)<br />
+    Only small machines do this nowadays<br />
+        </p>       
     </div>
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="js/bootstrap.min.js"></script>
