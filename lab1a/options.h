@@ -9,7 +9,7 @@ typedef struct option_t
     const char* name;
     int num_args;
     char** args;
-    void (*function)(struct option_t);
+    void (*handler)(struct option_t);
 } option_t;
 
 #define NUM_OPTIONS 24

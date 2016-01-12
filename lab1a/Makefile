@@ -6,7 +6,7 @@ CFLAGS = $(OPTIMIZE) $(DEBUG) -Wall -Wextra -march=native -mtune=native -std=gnu
 
 default: simpsh
 
-simpsh: main.c options.c functions.c simpsh.c
+simpsh: main.c options.c handlers.c simpsh.c
 	$(CC) $(CFLAGS) $^ -o $@
 check:
 	./test.sh

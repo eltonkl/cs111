@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 #include "simpsh.h"
-#include "functions.h"
+#include "handlers.h"
 
 int         simpsh_max_status;
 bool        simpsh_print_verbose;

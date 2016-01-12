@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #include "options.h"
-#include "functions.h"
+#include "handlers.h"
 #include "simpsh.h"
 
 struct option long_options[] =
@@ -81,7 +81,7 @@ option_t create_actionable_option(int val, int num_args, char** args)
         opt.args = args;
     else
         opt.args = 0;
-    opt.function = simpsh_functions[val - ACTIONABLE_OPTION_BASE];
+    opt.handler = simpsh_handlers[val - ACTIONABLE_OPTION_BASE];
     return opt;
 }
 
@@ -89,7 +89,7 @@ void execute_actionable_option(option_t opt)
 {
     if (simpsh_print_verbose)
         print_actionable_option_with_args(opt);
-    opt.function(opt);
+    opt.handler(opt);
 }
 
 void print_actionable_option_with_args(option_t opt)

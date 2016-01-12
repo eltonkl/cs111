@@ -7,7 +7,7 @@
 
 #include "simpsh.h"
 #include "options.h"
-#include "functions.h"
+#include "handlers.h"
 
 int main(int argc, char** argv)
 {
