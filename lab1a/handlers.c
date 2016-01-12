@@ -143,7 +143,8 @@ SIMPSH_HANDLER(command)
     simpsh_get_fd(stdin_logical_fd, &stdin_fd);
     simpsh_get_fd(stdout_logical_fd, &stdout_fd);
     simpsh_get_fd(stderr_logical_fd, &stderr_fd);
-
+    
+    //Fork the pipes and later account for potential bugs
     int pid = fork();
     if (pid == 0)
     {               
@@ -219,6 +220,9 @@ SIMPSH_HANDLER(command)
     }
     else
     {
+        //If the parent executes a command that uses a pipe, it needs to close the end it gives away to the child
+        //So, in order to prevent pipes from stalling the execution of the program we close them
+        //We invalidate after this so that the child's pipe end is safe from other attempts
         if (stdin_fd.type == SIMPSH_PIPE_READ)
         {
             close(stdin_fd.fd);
