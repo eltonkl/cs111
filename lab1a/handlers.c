@@ -188,25 +188,29 @@ SIMPSH_HANDLER(command)
     }
 }
 
+bool have_waitable_commands()
+{
+    for (int i = 0; i < simpsh_num_commands; i++)
+    {
+        command_t command;
+        simpsh_get_command_by_index(i, &command);
+        if (!command.done)
+            return true;
+    }
+    return false;
+}
+
 SIMPSH_HANDLER(wait)
 {
     (void)opt;
-    int start_num_commands = 0;
-    for (int i = 0; i < simpsh_num_commands; i++, start_num_commands++)
+    do
     {
-        command_t command;
-        simpsh_get_command(i, &command);
-        if (!command.done)
-            break;
-    }
-
-    for (int i = start_num_commands; i < simpsh_num_commands; i++)
-    {
-        command_t command;
-        simpsh_get_command(i, &command);
         int status;
-        if (wait(&status) != -1)
+        int pid = wait(&status);
+        if (pid != -1)
         {
+            command_t command;
+            simpsh_get_command_by_pid(pid, &command);
             if (WEXITSTATUS(status) > simpsh_max_status)
                 simpsh_max_status = WEXITSTATUS(status);
             printf("%i %s", WEXITSTATUS(status), command.command.args[3]);
@@ -216,9 +220,9 @@ SIMPSH_HANDLER(wait)
                     printf(" %s", command.command.args[i]);
             }
             putchar('\n');
-            simpsh_invalidate_command(i);
+            simpsh_invalidate_command_by_pid(pid);
         }
-    }
+    } while(have_waitable_commands());
 }
 
 SIMPSH_HANDLER(verbose)

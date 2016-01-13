@@ -79,7 +79,7 @@ bool simpsh_get_fd(int index, fd_t* storage)
     return true;
 }
 
-bool simpsh_get_command(int index, command_t* storage)
+bool simpsh_get_command_by_index(int index, command_t* storage)
 {
     if (index < 0 || index >= simpsh_num_commands)
         return false;
@@ -88,6 +88,20 @@ bool simpsh_get_command(int index, command_t* storage)
     if (storage)
         *storage = simpsh_commands[index];
     return true;
+}
+
+bool simpsh_get_command_by_pid(int pid, command_t* storage)
+{
+    for (int i = 0; i < simpsh_num_commands; i++)
+    {
+        if (simpsh_commands[i].pid == pid)
+        {
+            if (storage)
+                *storage = simpsh_commands[i];
+            return true;
+        }
+    }
+    return false;
 }
 
 void simpsh_invalidate_fd(int index)
@@ -102,13 +116,22 @@ void simpsh_invalidate_fd(int index)
     simpsh_fds[index].type = SIMPSH_CLOSED;
 }
 
-void simpsh_invalidate_command(int index)
+void simpsh_invalidate_command_by_index(int index)
 {
     if (index < 0 || index >= simpsh_num_commands)
         return;
     if (simpsh_commands == NULL)
         return;
     simpsh_commands[index].done = true;
+}
+
+void simpsh_invalidate_command_by_pid(int pid)
+{
+    for (int i = 0; i < simpsh_num_commands; i++)
+    {
+        if (simpsh_commands[i].pid == pid)
+            simpsh_commands[i].done = true;
+    }
 }
 
 void simpsh_init(int argc, char** argv)
@@ -125,7 +148,7 @@ void simpsh_finish()
     for (int i = 0; i < simpsh_num_commands; i++)
     {
         command_t command;
-        simpsh_get_command(i, &command);
+        simpsh_get_command_by_index(i, &command);
         if (command.done)
             continue;
         int status;
@@ -133,7 +156,7 @@ void simpsh_finish()
         {
             if (WEXITSTATUS(status) > simpsh_max_status)
                 simpsh_max_status = WEXITSTATUS(status);
-            simpsh_invalidate_command(i);
+            simpsh_invalidate_command_by_index(i);
         }
     }
 
