@@ -7,17 +7,17 @@ function testrun
     result=$?;
     if [ $result != $1 ]; then
         echo "TEST FAILED: ";
-        echo;
+        echo $2;
     else
         echo "TEST SUCCEEDED: ";
-        echo;
+        echo $2;
     fi
 }
 
 #create simpler associations to the test files for the purposes of testing. 
-t1=/testfiles/foo
-t2=/testfiles/bar
-errors=/testfiles/errors
+t1=testfiles/foo
+t2=testfiles/bar
+t3=testfiles/errors
 
 #TESTING
 #The general format of the segment is to run a possible simpsh use and then examine the output to see if it appears to be the proper output
