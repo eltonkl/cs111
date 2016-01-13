@@ -50,6 +50,9 @@ void simpsh_init_fd_pid_storage(int argc, char** argv)
         fprintf(stderr, "Failed to allocate memory for pids or fds\n");
 }
 
+//Set the current maximum status so that the execution of simpsh will output the maximum error status as the spec specifies
+//SIMPSH_MAX is defined in simpsh.h as a simple conditional check and set
+//Will set the new simpsh_max_status to be equal to the greater of either itself or the value 1, as specified by the spec
 void simpsh_error_set_status()
 {
     simpsh_max_status = SIMPSH_MAX(simpsh_max_status, 1);
