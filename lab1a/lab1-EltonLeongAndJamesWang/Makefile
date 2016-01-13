@@ -9,8 +9,8 @@ default: simpsh
 simpsh: main.c options.c handlers.c simpsh.c
 	$(CC) $(CFLAGS) $^ -o $@
 check: simpsh
-	./mytests.sh
-dist: check
-	tar -czf lab1-$(NAME).tar.gz --mode=a-w *.c *.h Makefile README *.sh
+	./test.sh
+dist: check clean
+	cd .. && tar -zcvf lab1-$(NAME)/lab1-$(NAME).tar.gz lab1-$(NAME)/*.c lab1-$(NAME)/*.h lab1-$(NAME)/Makefile lab1-$(NAME)/README lab1-$(NAME)/*.sh lab1-$(NAME)/*/*
 clean: 
 	rm -f *.o *.tar.gz simpsh

@@ -54,11 +54,11 @@ testrun 0 "Test case where we open a file for reading, a file for writing, and a
 
 #Command warnings NOTE: not sure exactly what the exit status of these commands should be. Please advise.
 ./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 1 0 2 cat $t1 $t2
-testrun 0 "Report warning if trying to use rdonly file in stdout and trying to use wronly file in stdin, without interuppting execution"
+testrun 0 "Report warning if trying to use rdonly file in stdout and trying to use wronly file in stdin, without interupting execution"
 
 ./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 2 1 0 cat $t1 $t2
 testrun 0 "Report warning if trying to use rdonly file in stderr, without interupting execution"
 
-Continue execution even after a failed command
+#Continue execution even after a failed command
 ./simpsh --verbose --wronly $t1 --command 1 2 3 echo foo --command 0 0 0 echo foo
 testrun 1 "Continue execution even after a failed command"
