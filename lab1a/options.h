@@ -6,10 +6,10 @@
 
 typedef struct option_t
 {
-    const char* name;
-    int num_args;
-    char** args;
-    void (*handler)(struct option_t);
+    const char* name;   //Name of option
+    int num_args;       //Number of arguments
+    char** args;        //Pointer to arguments for this function
+    void (*handler)(struct option_t);   //Function pointer
 } option_t;
 
 #define NUM_OPTIONS 24
