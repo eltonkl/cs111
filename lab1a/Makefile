@@ -11,6 +11,6 @@ simpsh: main.c options.c handlers.c simpsh.c
 check: simpsh
 	./test.sh
 dist: check
-	tar -czf lab1-$(NAME).tar.gz --mode=a-w *.c *.h Makefile
+	tar -czf lab1-$(NAME).tar.gz --mode=a-w *.c *.h Makefile README *.sh
 clean: 
 	rm -f *.o *.tar.gz simpsh
