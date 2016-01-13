@@ -46,19 +46,19 @@ testrun 1 "Report error if command uses the wrong number of options"
 testrun 0 "Test case where we open a file for reading, a file for writing, and a file for error writing and execute the cat command."
 
 #Inappropriate action catches
-./simpsh --rdonly $t1 --rdonly $t2 --wronly $t3 --command 0 1 2 cat $t1 $t2
-testrun 1 "Report error if command attempts to write to a read only file"
+#./simpsh --rdonly $t1 --rdonly $t2 --wronly $t3 --command 0 1 2 cat $t1 $t2
+#testrun 1 "Report error if command attempts to write to a read only file"
 
-./simpsh --wronly $t1 --rdonly $t2 --wronly $t3 --command 0 1 2 cat $t1 $t2
-testrun 1 "Report error if command attempts to read from a write only file"
+#./simpsh --wronly $t1 --rdonly $t2 --wronly $t3 --command 0 1 2 cat $t1 $t2
+#testrun 1 "Report error if command attempts to read from a write only file"
 
 #Command warnings NOTE: not sure exactly what the exit status of these commands should be. Please advise.
-#./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 1 0 2 cat $t1 $t2
-#testrun 0 "Report warning if trying to use rdonly file in stdout and trying to use wronly file in stdin, without interuppting execution"
-#
-#./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 2 1 0 cat $t1 $t2
-#testrun 0 "Report warning if trying to use rdonly file in stderr, without interupting execution"
+./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 1 0 2 cat $t1 $t2
+testrun 0 "Report warning if trying to use rdonly file in stdout and trying to use wronly file in stdin, without interuppting execution"
 
-#Continue execution even after a failed command
+./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 2 1 0 cat $t1 $t2
+testrun 0 "Report warning if trying to use rdonly file in stderr, without interupting execution"
+
+Continue execution even after a failed command
 ./simpsh --verbose --wronly $t1 --command 1 2 3 echo foo --command 0 0 0 echo foo
 testrun 1 "Continue execution even after a failed command"
