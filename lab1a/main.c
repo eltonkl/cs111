@@ -32,7 +32,7 @@ int main(int argc, char** argv)
         }
         else if (c == '?')
         {
-            //getopt_long already printed error msg
+            simpsh_error_set_status();
             continue;
         }
 
@@ -42,7 +42,8 @@ int main(int argc, char** argv)
         { 
             if (!optarg)
             {
-                fprintf(stderr, "%s: invalid number of args for option \'--command\'\n", argv[0]); 
+                fprintf(stderr, "%s: invalid number of args for option \'--command\'\n", argv[0]);
+                simpsh_error_set_status();
                 continue;
             }
             else
@@ -63,7 +64,10 @@ int main(int argc, char** argv)
                 opt = create_actionable_option(c, num_args,
                                                &argv[original_optind - 1]);
                 if (!is_valid_command(argv, opt))
+                {
+                    simpsh_error_set_status();
                     continue;
+                }
             }
         }
         else if (optarg)

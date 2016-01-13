@@ -100,7 +100,10 @@ SIMPSH_HANDLER(rdonly)
 {
     int fd = simpsh_open(opt.args[0], O_RDONLY);
     if (fd == -1)
+    {
         fprintf(stderr, "Failed to open read only file %s\n", opt.args[0]);
+        simpsh_error_set_status();
+    }
     simpsh_add_fd(fd, SIMPSH_FILE);
 }
 
@@ -108,7 +111,10 @@ SIMPSH_HANDLER(rdwr)
 {
     int fd = simpsh_open(opt.args[0], O_RDWR);
     if (fd == -1)
+    {
         fprintf(stderr, "Failed to open read/write file %s\n", opt.args[0]);
+        simpsh_error_set_status();
+    }
     simpsh_add_fd(fd, SIMPSH_FILE);
 }
 
@@ -116,7 +122,10 @@ SIMPSH_HANDLER(wronly)
 {
     int fd = simpsh_open(opt.args[0], O_WRONLY);
     if (fd == -1)
+    {
         fprintf(stderr, "Failed to open write only file %s\n", opt.args[0]);
+        simpsh_error_set_status();
+    }
     simpsh_add_fd(fd, SIMPSH_FILE);
 }
 
@@ -129,6 +138,7 @@ SIMPSH_HANDLER(pipe)
         fprintf(stderr, "Failed to create pipe\n");
         fds[0] = -1;
         fds[1] = -1;
+        simpsh_error_set_status();
     }
     simpsh_add_fd(fds[0], SIMPSH_PIPE_READ);
     simpsh_add_fd(fds[1], SIMPSH_PIPE_WRITE);
@@ -212,8 +222,7 @@ SIMPSH_HANDLER(wait)
             command_t command;
             if (!simpsh_get_command_by_pid(pid, &command))
                 continue;
-            if (WEXITSTATUS(status) > simpsh_max_status)
-                simpsh_max_status = WEXITSTATUS(status);
+            simpsh_max_status = SIMPSH_MAX(simpsh_max_status, WEXITSTATUS(status));
             printf("%i %s", WEXITSTATUS(status), command.command.args[3]);
             if (command.command.num_args > 4)
             {
@@ -259,6 +268,7 @@ static bool get_arg_as_number(option_t opt, int* num)
     if (end == opt.args[0])
     {
         fprintf(stderr, "Option \'--%s\' failed: not a valid number: %s\n", opt.name, opt.args[0]);
+        simpsh_error_set_status();
         return false;
     }
     return true;
@@ -273,7 +283,10 @@ SIMPSH_HANDLER(catch)
     struct sigaction sa;
     sa.sa_handler = catch_handler;
     if (sigaction(num, &sa, NULL) == -1)
+    {
         fprintf(stderr, "Failed to install signal handler for signal %i\n", num);
+        simpsh_error_set_status();
+    }
 }
 
 SIMPSH_HANDLER(ignore)
@@ -283,7 +296,10 @@ SIMPSH_HANDLER(ignore)
         return;
 
     if (signal(num, SIG_IGN) == SIG_ERR)
+    {
         fprintf(stderr, "Failed to ignore signal %i\n", num);
+        simpsh_error_set_status();
+    }
 }
 
 SIMPSH_HANDLER(default)
@@ -293,7 +309,10 @@ SIMPSH_HANDLER(default)
         return;
 
     if (signal(num, SIG_DFL) == SIG_ERR)
+    {
         fprintf(stderr, "Failed to reset signal handler to default behavior for signal %i\n", num);
+        simpsh_error_set_status();
+    }
 }
 
 SIMPSH_HANDLER(pause)

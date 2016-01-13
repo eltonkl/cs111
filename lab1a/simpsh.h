@@ -5,6 +5,8 @@
 
 #include "options.h"
 
+#define SIMPSH_MAX(a,b) ((a > b) ? a : b) 
+
 extern int              simpsh_max_status;
 extern bool             simpsh_print_verbose;
 
@@ -36,13 +38,13 @@ extern int          simpsh_num_commands;
 extern fd_t*        simpsh_fds;
 extern command_t*   simpsh_commands;
 
+void simpsh_error_set_status();
 void simpsh_add_fd(int fd, simpsh_file_type type);
 void simpsh_add_command(int pid, option_t command, bool done);
 bool simpsh_get_fd(int index, fd_t* storage);
 bool simpsh_get_command_by_index(int index, command_t* storage);
 bool simpsh_get_command_by_pid(int pid, command_t* storage);
 void simpsh_invalidate_fd(int index);
-void simpsh_invalidate_command_by_index(int index);
 void simpsh_invalidate_command_by_pid(int pid);
 
 extern int append_flag;

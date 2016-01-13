@@ -50,6 +50,11 @@ void simpsh_init_fd_pid_storage(int argc, char** argv)
         fprintf(stderr, "Failed to allocate memory for pids or fds\n");
 }
 
+void simpsh_error_set_status()
+{
+    simpsh_max_status = SIMPSH_MAX(simpsh_max_status, 1);
+}
+
 void simpsh_add_fd(int fd, simpsh_file_type type)
 {
     simpsh_fds[simpsh_num_fds].fd = fd;
@@ -116,15 +121,6 @@ void simpsh_invalidate_fd(int index)
     simpsh_fds[index].type = SIMPSH_CLOSED;
 }
 
-void simpsh_invalidate_command_by_index(int index)
-{
-    if (index < 0 || index >= simpsh_num_commands)
-        return;
-    if (simpsh_commands == NULL)
-        return;
-    simpsh_commands[index].done = true;
-}
-
 void simpsh_invalidate_command_by_pid(int pid)
 {
     for (int i = 0; i < simpsh_num_commands; i++)
@@ -144,21 +140,6 @@ void simpsh_finish()
 {
     for (int i = 0; i < simpsh_num_fds; i++)
         simpsh_invalidate_fd(i);
-
-    for (int i = 0; i < simpsh_num_commands; i++)
-    {
-        command_t command;
-        simpsh_get_command_by_index(i, &command);
-        if (command.done)
-            continue;
-        int status;
-        if (waitpid(command.pid, &status, 0) == command.pid)
-        {
-            if (WEXITSTATUS(status) > simpsh_max_status)
-                simpsh_max_status = WEXITSTATUS(status);
-            simpsh_invalidate_command_by_index(i);
-        }
-    }
 
     free(simpsh_commands);
     free(simpsh_fds);
