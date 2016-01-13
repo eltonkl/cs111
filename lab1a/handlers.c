@@ -210,7 +210,8 @@ SIMPSH_HANDLER(wait)
         if (pid != -1)
         {
             command_t command;
-            simpsh_get_command_by_pid(pid, &command);
+            if (!simpsh_get_command_by_pid(pid, &command))
+                continue;
             if (WEXITSTATUS(status) > simpsh_max_status)
                 simpsh_max_status = WEXITSTATUS(status);
             printf("%i %s", WEXITSTATUS(status), command.command.args[3]);
