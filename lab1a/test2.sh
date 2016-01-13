@@ -39,7 +39,7 @@ test(0) "Test case where the file exists for writing only and opens correctly"
 ./simpsh --command 1 2 3 echo $t1
 test(1) "Report error if command attempts to use an out of range file descriptor"
 
-./simpsh --command 1 2 3
+./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 1 2 3
 test(1) "Report error if command uses the wrong number of options"
 
 ./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 0 1 2 cat $t1 $t2
@@ -57,5 +57,8 @@ test(1) "Report error if command attempts to read from a write only file"
 test(0) "Report warning if trying to use rdonly file in stdout and trying to use wronly file in stdin, without interuppting execution"
 
 ./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 2 1 0 cat $t1 $t2
-test(0) "Report warning if trying to use rdonly file in stderr, without interuppting execution"
+test(0) "Report warning if trying to use rdonly file in stderr, without interupting execution"
 
+#Continue execution even after a failed command
+./simpsh --verbose --wronly $t1 --command 1 2 3 echo foo --command 0 0 0 echo foo
+test(0) "Continute execution even after a failed command"
