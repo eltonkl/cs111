@@ -44,7 +44,7 @@
                             <td><a href="#philosophy">I. A bit more philosophy</a></td>
                         </tr>
                         <tr>
-                            <td><a href="#hownotos">II. How not to do an OS</a></td>
+                            <td><a href="#whynotos">II. Why not use an OS?</a></td>
                         </tr>
                         <tr>
                             <td><a href="#wordcount">III. Word counting program</a></td>
@@ -62,12 +62,12 @@
         <p>Tradeoffs and scaling are issues that have been with us for a long time (see lecture 1 for more details).</p>
         <p>Complexity is yet another issue, and it's one he didn't talk about last lecture. </p>
         <br/>
-        <p><b>Moore’s Law</b> states that the number of transistors on a chip doubles approximately every year (so it exhibits exponential growth). This phenomenon has been occurring for decades, but lately it has started to slow down. Note that Moore’s Law doesn’t describe the number of transistors that we can possibly put on a chip, but rather the economic “sweet spot” for transistor density (the number of transistors with which it would be reasonable to mass produce chips).</p>
+        <p><b>Moore's Law</b> states that the number of transistors on a chip doubles approximately every year (so it exhibits exponential growth). This phenomenon has been occurring for decades, but lately it has started to slow down. Note that Moore's Law doesn't describe the number of transistors that we can possibly put on a chip, but rather the economic &#8220;sweet spot&#8221; for transistor density (the number of transistors with which it would be reasonable to mass produce chips).</p>
         <br/>
         <img class="center-image" src="images/moores.svg" alt="Graph displaying exponential growth"/>
         <p><b>Kryder's Law</b> (bytes/drive) observes that secondary storage capacity has also experienced exponential growth.</p>
         <br/>
-        <p>Note that Kryder’s and Moore’s laws do NOT address speed or performance. Historically speed and performance haven't grown nearly as fast as storage space. This introduces a problem of incommensurate scaling in system design: OS’s need to deal with increasing complexity, but their hardware isn’t getting much faster. </p>
+        <p>Note that Kryder's and Moore's laws do NOT address speed or performance. Historically speed and performance haven't grown nearly as fast as storage space. This introduces a problem of incommensurate scaling in system design: OS's need to deal with increasing complexity, but their hardware isn't getting much faster. </p>
         <br/>
         <br/>
         <h4>Why exponential growth?</h4>
@@ -77,8 +77,8 @@
 
 
 		<!-- II. HOW NOT OS -->
-        <div class="page-header" id="hownotos">
-            <h2>II. How not to do an OS</h2>
+        <div class="page-header" id="whynotos">
+            <h2>II. Why not use an OS?</h2>
         </div>
         <p>There are many reasons you might not want to use an operating system. </p>
         <br/>
@@ -92,7 +92,7 @@
         <p>Since there are many things happening at once on an OS, there is more opportunity for things to go wrong.</p>
         <br/>
         <h4>Security</h4>
-        <p>Security is another important reason, as we you’ll see in this next example</p>
+        <p>Security is another important reason, as you’ll see in this next example</p>
 
 
         <!-- III. WORD COUNTING PROGRAM -->
@@ -124,9 +124,11 @@
             </div>
             <div class="col-md-3"></div>
         </div>
-        <p>We run into the bootstrapping problem: how does the computer know to run the program when it starts up? We need something to tell the computer what to do in order to get everything started. When you turn a computer off, cycling power clears the CPU, cache, and RAM. When Bob restarts the computer, it needs some way of getting his word count program into RAM.</p>
         <br/>
-        <p>There's an initial instruction pointer in your computer that is set to location Oxffff0 (220 -16) in RAM. That location is part of a portion in physical RAM that simply redirects you to a region of ROM (better idea → nonvolatile memory) containing instructions hardwired by the manufacturer to do whatever we want them to. We could ask the manufacturer to put the word count program in the ROM, which is expensive, takes time, costs money, etc.</p>
+        <h4>Boot process</h4>
+        <p>We run into the bootstrapping problem: how does the computer know to run the program when it starts up? We need something to tell the computer what to do in order to get everything started. When you turn a computer off, cycling power clears the CPU, cache, and RAM. When Eggert restarts the computer, it needs some way of getting his word count program into RAM.</p>
+        <br/>
+        <p>There's an initial instruction pointer in your computer that is set to location 0xFFFF0 (220 -16) in RAM. That location is part of a portion in physical RAM that simply redirects you to a region of ROM (better idea → nonvolatile memory) containing instructions hardwired by the manufacturer to do whatever we want them to. We could ask the manufacturer to put the word count program in the ROM, which is expensive, takes time, costs money, etc.</p>
         <br/>
         <p>A more modern solution is to store some information in EEPROM that will tell the computer what to do when it starts up. First, we need to store the location and size of the program on the hard disk (the manufacturer hard codes these constants). Second, we’ll need a program that loads and executes the word count program (it can do this by taking the word count program from the disk and putting it into RAM).</p>
         <br/>
@@ -141,7 +143,8 @@
        	<p>The firmware boots by reading the MBR & executing the code in the MBR. The MBR examines the partition table and finds a partition that's bootable, then boots that partition. This process is called chain loading.</p>
        	<br/>
        	<p>Chain-loading: firmware -> MBR (OS-agnostic) -> VBR (OS-specific) -> kernel (many sectors) -> your apps</p>
-       	<br/>
+        <br/><br/>
+        <h4>Reading data from the disk</h4>
        	<p>At this point, it’s clear that we need some sort of subroutine for reading data from the disk. The firmware, MBR and word count program will all be able to use it.</p>
        	<br/>
         <p>The controller communicates through the buses via their registers, listed below:</p>
@@ -156,7 +159,7 @@
 0x1F7 ->        status and command register, contains state information for disk controller
 </pre>
 <p>Reading 0x01000000 (0xC0) from the status and command register indicates that the disk is ready to receive a command.</p>
-</pre>
+<p>As the C library does not have built in functions for x86 I/O, we'll declare one and pretend the rest exist and are implemented.</p>
 <pre class="code prettyprint">
 static inline inb(int a) {
     asm("____");
