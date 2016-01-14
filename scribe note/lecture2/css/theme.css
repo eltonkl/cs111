@@ -1,12 +1,27 @@
 .container {
-      width: auto;
+    margin-top: 16px;
+    width: auto;
+}
+
+.zero-margins {
+    margin: 0;
+}
+
+.center-text {
+    text-align: center;
 }
 
 .code {
-      font-family:Courier New, Courier, monospace;
+    font-size: 16px;
+    font-family:Courier New, Courier, monospace;
+}
+
+table {
+    font: 16px arial, sans-serif;
 }
 
 p {
-      line-height: 1.65;
-      margin-bottom:0px;
+    font: 16px arial, sans-serif;
+    line-height: 1.65;
+    margin: 0;
 }
