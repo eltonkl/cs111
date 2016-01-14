@@ -8,9 +8,12 @@
     <title>Lecture 2 Scribe Notes, CS 111, Winter 16</title>
 
     <!-- Bootstrap -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/bootstrap-theme.min.css" rel="stylesheet">
-    <link href="css/theme.css" rel="stylesheet">
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -18,6 +21,7 @@
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
     <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+    <link href="theme.css" rel="stylesheet">
   </head>
   <body>
     <div class="container">
@@ -64,7 +68,7 @@
         <br/>
         <p><b>Moore's Law</b> states that the number of transistors on a chip doubles approximately every year (so it exhibits exponential growth). This phenomenon has been occurring for decades, but lately it has started to slow down. Note that Moore's Law doesn't describe the number of transistors that we can possibly put on a chip, but rather the economic &#8220;sweet spot&#8221; for transistor density (the number of transistors with which it would be reasonable to mass produce chips).</p>
         <br/>
-        <img class="center-image" src="images/moores.svg" alt="Graph displaying exponential growth"/>
+        <img class="center-image" src="moores.svg" alt="Graph displaying exponential growth"/>
         <p><b>Kryder's Law</b> (bytes/drive) observes that secondary storage capacity has also experienced exponential growth.</p>
         <br/>
         <p>Note that Kryder's and Moore's laws do NOT address speed or performance. Historically speed and performance haven't grown nearly as fast as storage space. This introduces a problem of incommensurate scaling in system design: OS's need to deal with increasing complexity, but their hardware isn't getting much faster. </p>
@@ -210,7 +214,5 @@ We have three possible locations: firmware, MBR, and the word count program itse
     <div class="col-md-2"></div>
     </div>
     </div>
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script src="js/bootstrap.min.js"></script>
   </body>
 </html>
