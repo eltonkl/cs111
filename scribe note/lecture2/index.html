@@ -167,7 +167,7 @@ static inline inb(int a) {
 <pre class="code prettyprint">
 void read_ide_sector(int sector_num, char* memory_addr) {
 </pre>
-<p>Waitsuntil the disk's controller specifies that the disk is ready:</p>
+<p>Waits until the disk's controller specifies that the disk is ready:</p>
 <pre class="code prettyprint">
     while ((inb(0x1F7) & 0xC0) != 0x40)
         continue;
