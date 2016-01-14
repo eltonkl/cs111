@@ -53,17 +53,54 @@
                 </table>
             </div>
         </div>
+
+
+        <!-- I. PHILOSOPHY -->
         <div class="page-header" id="philosophy">
             <h2>I. A bit more philosophy</h2>
         </div>
-            <img class="center-image" src="images/moores.svg" alt="Graph displaying exponential growth"/>
+        <p>Tradeoffs and scaling are issues that have been with us for a long time (see lecture 1 for more details).</p>
+        <p>Complexity is yet another issue, and it's one he didn't talk about last lecture. </p>
+        <br/>
+        <p><b>Moore’s Law</b> states that the number of transistors on a chip doubles approximately every year (so it exhibits exponential growth). This phenomenon has been occurring for decades, but lately it has started to slow down. Note that Moore’s Law doesn’t describe the number of transistors that we can possibly put on a chip, but rather the economic “sweet spot” for transistor density (the number of transistors with which it would be reasonable to mass produce chips).</p>
+        <br/>
+        <img class="center-image" src="images/moores.svg" alt="Graph displaying exponential growth"/>
+        <p><b>Kryder's Law</b> (bytes/drive) observes that secondary storage capacity has also experienced exponential growth.</p>
+        <br/>
+        <p>Note that Kryder’s and Moore’s laws do NOT address speed or performance. Historically speed and performance haven't grown nearly as fast as storage space. This introduces a problem of incommensurate scaling in system design: OS’s need to deal with increasing complexity, but their hardware isn’t getting much faster. </p>
+        <br/>
+        <br/>
+        <h4>Why exponential growth?</h4>
+        <p>The UNIVAC I and UNIVAC II are one example. The UNIVAC I, one of the first computers, was hand designed, slow, and safe. There was a huge amount of error correction circuitry built into the computer to make sure it worked.</p>
+
+		<p>Engineers used the UNIVAC I to design the UNIVAC II by running simulations of the II on the I. Based on those simulations, they were able to determine where error correction was actually needed and eliminate unnecessary bulk elsewhere.</p>
+
+
+		<!-- II. HOW NOT OS -->
         <div class="page-header" id="hownotos">
             <h2>II. How not to do an OS</h2>
         </div>
+        <p>There are many reasons you might not want to use an operating system. </p>
+        <br/>
+        <h4>Simplicity</h4>
+        <p>An operating system is a complicated piece of software containing a lot of components that may be unnecessary for what the user aims to do.</p>
+        <br/>
+        <h4>Performance</h4>
+        <p>When you run an application on an OS, there are lots of things going on in the background that require processing power. Speed and memory are both heavily affected by the OS.</p>
+        <br/>
+        <h4>Reliability (as a consequence of simplicity)</h4>
+        <p>Since there are many things happening at once on an OS, there is more opportunity for things to go wrong.</p>
+        <br/>
+        <h4>Security</h4>
+        <p>Security is another important reason, as we you’ll see in this next example</p>
+
+
+        <!-- III. WORD COUNTING PROGRAM -->
         <div class="page-header" id="wordcount">
             <h2>III. Word counting program</h2>
         </div>
         <p>Hypothetical situation: Eggert is writing a document. As a paranoid professor, he wants his application to be as simple as possible and doesn't want to use an OS to do the following task: count the number of words in an ASCII text file (bytes '\001' - '\177', 1 - 127)</p>
+
         <div class="row">
             <div class="col-md-3"></div>
             <div class="col-md-6">
@@ -87,6 +124,26 @@
             </div>
             <div class="col-md-3"></div>
         </div>
+        <p>We run into the bootstrapping problem: how does the computer know to run the program when it starts up? We need something to tell the computer what to do in order to get everything started. When you turn a computer off, cycling power clears the CPU, cache, and RAM. When Bob restarts the computer, it needs some way of getting his word count program into RAM.</p>
+        <br/>
+        <p>There's an initial instruction pointer in your computer that is set to location Oxffff0 (220 -16) in RAM. That location is part of a portion in physical RAM that simply redirects you to a region of ROM (better idea → nonvolatile memory) containing instructions hardwired by the manufacturer to do whatever we want them to. We could ask the manufacturer to put the word count program in the ROM, which is expensive, takes time, costs money, etc.</p>
+        <br/>
+        <p>A more modern solution is to store some information in EEPROM that will tell the computer what to do when it starts up. First, we need to store the location and size of the program on the hard disk (the manufacturer hard codes these constants). Second, we’ll need a program that loads and executes the word count program (it can do this by taking the word count program from the disk and putting it into RAM).</p>
+        <br/>
+        <p>By convention, things are set up as follows: the first sector on the disk is the master boot record (MBR). The first 446 bytes of these 512 bytes are x86 code.</p>
+        <br/>
+        <p>The program on the EEPROM performs hardware sanity checks (it examines the CPU and RAM). Then it checks for devices and identifies the first device with an MBR. EEPROM identifies MBR’s based on the convention that the last two bytes of a master boot record are 0x55 0xAA (little endian 0xAA55).</p>
+        <br/>
+       	<p>EEPROM copies the x86 code sector of the MBR to 0x7C00 and jumps into it.</p>
+       	<br/>
+       	<p>Between the 446 bytes of code and 2 byte indicator is 64 bytes, sectioned into 4 16 byte entries. This is called the partition table (it only allows for 4 partitions due to poor design). Each 16 byte entry contains sector counts for the offset of the partition and for the size of the partition plus other info, including a type byte and whether the partition is bootable or not.</p>
+       	<br/>
+       	<p>The firmware boots by reading the MBR & executing the code in the MBR. The MBR examines the partition table and finds a partition that's bootable, then boots that partition. This process is called chain loading.</p>
+       	<br/>
+       	<p>Chain-loading: firmware -> MBR (OS-agnostic) -> VBR (OS-specific) -> kernel (many sectors) -> your apps</p>
+       	<br/>
+       	<p>At this point, it’s clear that we need some sort of subroutine for reading data from the disk. The firmware, MBR and word count program will all be able to use it.</p>
+       	<br/>
         <p>The controller communicates through the buses via their registers, listed below:</p>
 <pre class="code">
 0x1F0 ->        read data
@@ -140,6 +197,12 @@ void read_ide_sector(int sector_num, char* memory_addr) {
     insl(0x1F0, memory_addr, 128);
 }
 </pre>
+<p>Let's say we compile our subroutine and are trying to figure out where to put it. 
+We have three possible locations: firmware, MBR, and the word count program itself.</p>
+<br/>
+<p>We could chose to have just one copy, but performance will be better if we have 3.</p>
+<br/>
+<p>Note: the rest of the word count program is finished in lecture 3.</p>
     </div>
     <div class="col-md-2"></div>
     </div>
