@@ -12,11 +12,11 @@ typedef struct option_t
     void (*handler)(struct option_t);   //Function pointer
 } option_t;
 
-#define NUM_OPTIONS 24
+#define NUM_OPTIONS 25
 #define NUM_FLAGS 11
 #define NUM_FILE_OPEN_OPTIONS 4
 #define NUM_SUBCOMMAND_OPTIONS 2
-#define NUM_MISC_OPTIONS 7
+#define NUM_MISC_OPTIONS 8
 
 #define NUM_ACTIONABLE_OPTIONS (NUM_OPTIONS - NUM_FLAGS)
 #define ACTIONABLE_OPTION_BASE 'a'

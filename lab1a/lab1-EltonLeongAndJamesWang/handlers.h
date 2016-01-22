@@ -22,6 +22,7 @@ SIMPSH_HANDLER(catch);
 SIMPSH_HANDLER(ignore);
 SIMPSH_HANDLER(default);
 SIMPSH_HANDLER(pause);
+SIMPSH_HANDLER(close);
 
 extern void (*simpsh_handlers[NUM_ACTIONABLE_OPTIONS])(option_t);
 

@@ -32,6 +32,7 @@ void (*simpsh_handlers[])(option_t opt) =
     simpsh_ignore,
     simpsh_default,
     simpsh_pause,
+    simpsh_close
 };
 
 int append_flag;
@@ -319,4 +320,21 @@ SIMPSH_HANDLER(pause)
 {
     (void)opt;
     pause();
+}
+
+SIMPSH_HANDLER(close)
+{
+    int num;
+    if (!get_arg_as_number(opt, &num))
+        return;
+    fd_t fd;
+    if (!simpsh_get_fd(num, &fd))
+    {
+        fprintf(stderr, "Not a valid logical fd number: %d\n", num);
+        return;
+    }
+    if (close(fd.fd) == 0)
+        simpsh_invalidate_fd(num);
+    else
+        fprintf(stderr, "Failed to close logical fd %d\n", num);
 }

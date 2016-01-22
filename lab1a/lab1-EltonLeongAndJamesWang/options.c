@@ -37,6 +37,7 @@ struct option long_options[] =
     { "ignore",     required_argument,  0,  ACTIONABLE_OPTION_BASE + 10 },
     { "default",    required_argument,  0,  ACTIONABLE_OPTION_BASE + 11 },
     { "pause",      no_argument,        0,  ACTIONABLE_OPTION_BASE + 12 },
+    { "close",      required_argument,  0,  ACTIONABLE_OPTION_BASE + 13 },
     { 0, 0, 0, 0 }
 };
 

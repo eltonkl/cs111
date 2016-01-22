@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-#include <unistd.h>
 #include <getopt.h>
-#include <fcntl.h>
 
 #include "simpsh.h"
 #include "options.h"
