@@ -7,6 +7,8 @@
 #include "simpsh.h"
 #include "handlers.h"
 
+jmp_buf     simpsh_context;
+int         simpsh_last_signal;
 int         simpsh_max_status;
 bool        simpsh_print_verbose;
 

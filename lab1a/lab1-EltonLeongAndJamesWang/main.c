@@ -2,6 +2,8 @@
 #include <stdbool.h>
 #include <string.h>
 #include <getopt.h>
+#include <setjmp.h>
+#include <signal.h>
 
 #include "simpsh.h"
 #include "options.h"
@@ -13,6 +15,14 @@ int main(int argc, char** argv)
     int c;
     while (1)
     {
+        if (setjmp(simpsh_context))
+        {
+            sigset_t ss;
+            sigemptyset(&ss);
+            sigaddset(&ss, simpsh_last_signal);
+            sigprocmask(SIG_UNBLOCK, &ss, NULL);
+        }
+
         int option_index = 0;
         c = getopt_long(argc, argv, "", long_options, &option_index);
         
@@ -36,7 +46,7 @@ int main(int argc, char** argv)
 
         //pass args to create_actionable_option
         option_t opt;
-        if (c == 'e')
+        if (c == ACTIONABLE_OPTION_BASE + 4)
         { 
             if (!optarg)
             {
@@ -66,6 +76,19 @@ int main(int argc, char** argv)
                     simpsh_error_set_status();
                     continue;
                 }
+            }
+        }
+        else if (c == ACTIONABLE_OPTION_BASE + 5)
+        {
+            //This branch occurs if the wait option was called like so: --wait=5
+            if (optarg)
+                opt = create_actionable_option(c, 1, &argv[optind - 1]);
+            else
+            {
+                if (optind == argc || (strlen(argv[optind]) > 2 && argv[optind][0] == '-' && argv[optind][1] == '-'))
+                    opt = create_actionable_option(c, 0, 0);
+                else
+                    opt = create_actionable_option(c, 1, &argv[optind++]);
             }
         }
         else if (optarg)

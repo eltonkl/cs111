@@ -28,7 +28,7 @@ struct option long_options[] =
     { "pipe",       no_argument,        0,  ACTIONABLE_OPTION_BASE + 3  }, 
 
     { "command",    required_argument,  0,  ACTIONABLE_OPTION_BASE + 4  },
-    { "wait",       no_argument,        0,  ACTIONABLE_OPTION_BASE + 5  },
+    { "wait",       optional_argument,  0,  ACTIONABLE_OPTION_BASE + 5  },
 
     { "verbose",    no_argument,        0,  ACTIONABLE_OPTION_BASE + 6  },
     { "profile",    no_argument,        0,  ACTIONABLE_OPTION_BASE + 7  },

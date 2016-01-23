@@ -211,9 +211,58 @@ bool have_waitable_commands()
     return false;
 }
 
+static bool get_arg_as_number(option_t opt, int* num)
+{
+    char* end;
+    if (num)
+        *num = (int)strtol(opt.args[0], &end, 0);
+    else
+        strtol(opt.args[0], &end, 0);
+    if (end == opt.args[0])
+    {
+        fprintf(stderr, "Option \'--%s\' failed: not a valid number: %s\n", opt.name, opt.args[0]);
+        simpsh_error_set_status();
+        return false;
+    }
+    return true;
+}
+
+static void handle_and_print_command(int status, command_t command)
+{
+    simpsh_max_status = SIMPSH_MAX(simpsh_max_status, WEXITSTATUS(status));
+    printf("%i %s", WEXITSTATUS(status), command.command.args[3]);
+    if (command.command.num_args > 4)
+    {
+        for (int i = 4; i < command.command.num_args; i++)
+            printf(" %s", command.command.args[i]);
+    }
+    putchar('\n');
+    simpsh_invalidate_command_by_pid(command.pid);
+}
+
 SIMPSH_HANDLER(wait)
 {
-    (void)opt;
+    if (opt.num_args != 0)
+    {
+        int num;
+        if (!get_arg_as_number(opt, &num))
+            return;
+        command_t command;
+        if (!simpsh_get_command_by_index(num, &command))
+        {
+            fprintf(stderr, "Option \'--wait\' failed: not a valid logical PID number: %s\n", opt.args[0]);
+            return;
+        }
+        int status;
+        if (waitpid(command.pid, &status, 0) == -1)
+        {
+            fprintf(stderr, "Failed to wait for PID %d\n", command.pid);
+            return;
+        }
+        else
+            handle_and_print_command(status, command);
+        return;
+    }
     do
     {
         int status;
@@ -223,15 +272,7 @@ SIMPSH_HANDLER(wait)
             command_t command;
             if (!simpsh_get_command_by_pid(pid, &command))
                 continue;
-            simpsh_max_status = SIMPSH_MAX(simpsh_max_status, WEXITSTATUS(status));
-            printf("%i %s", WEXITSTATUS(status), command.command.args[3]);
-            if (command.command.num_args > 4)
-            {
-                for (int i = 4; i < command.command.num_args; i++)
-                    printf(" %s", command.command.args[i]);
-            }
-            putchar('\n');
-            simpsh_invalidate_command_by_pid(pid);
+            handle_and_print_command(status, command);
         }
     } while(have_waitable_commands());
 }
@@ -259,22 +300,6 @@ static void catch_handler(int signo)
     exit(signo);
 }
 
-static bool get_arg_as_number(option_t opt, int* num)
-{
-    char* end;
-    if (num)
-        *num = (int)strtol(opt.args[0], &end, 0);
-    else
-        strtol(opt.args[0], &end, 0);
-    if (end == opt.args[0])
-    {
-        fprintf(stderr, "Option \'--%s\' failed: not a valid number: %s\n", opt.name, opt.args[0]);
-        simpsh_error_set_status();
-        return false;
-    }
-    return true;
-}
-
 SIMPSH_HANDLER(catch)
 {
     int num;
@@ -290,17 +315,30 @@ SIMPSH_HANDLER(catch)
     }
 }
 
+static void ignore_handler(int signo)
+{
+    simpsh_last_signal = signo;
+    longjmp(simpsh_context, 1);
+}
+
 SIMPSH_HANDLER(ignore)
 {
     int num;
     if (!get_arg_as_number(opt, &num))
         return;
 
-    if (signal(num, SIG_IGN) == SIG_ERR)
+    struct sigaction sa;
+    sa.sa_handler = ignore_handler;
+    if (sigaction(num, &sa, NULL) == -1)
+    {
+        fprintf(stderr, "Failed to install signal handler for signal %i\n", num);
+        simpsh_error_set_status();
+    }
+/*    if (signal(num, SIG_IGN) == SIG_ERR)
     {
         fprintf(stderr, "Failed to ignore signal %i\n", num);
         simpsh_error_set_status();
-    }
+    }*/
 }
 
 SIMPSH_HANDLER(default)
