@@ -45,8 +45,8 @@ bool is_valid_command(char** argv, option_t opt)
 {
     if (opt.num_args < 4)
     {
-        fprintf(stderr, "%s: invalid number of args for option \'--command\'\n", argv[0]);
-        return false;
+        fprintf(stderr, "%s: invalid number of args for option \'--command\', args ", argv[0]);
+        goto fail;
     }
     for (int i = 0; i < 3; i++)
     {
@@ -55,21 +55,24 @@ bool is_valid_command(char** argv, option_t opt)
         int logical_fd_num = (int)strtol(opt.args[i], &end, 0);
         if (end == opt.args[i])
         {
-            fprintf(stderr, "Option \'--command\' failed: not a valid number: %s\n", opt.args[i]);
-            return false;
+            fprintf(stderr, "\'--command\' failed: not a valid number: %s, args ", opt.args[i]);
+            goto fail;
         }
         if (!simpsh_get_fd(logical_fd_num, &fd))
         {
-            fprintf(stderr, "Option \'--command\' failed: not a valid file or pipe number: %s\n", opt.args[i]);
-            return false;
+            fprintf(stderr, "\'--command\' failed: not a valid file or pipe number: %s, args ", opt.args[i]);
+            goto fail;
         }
         if (fd.type == SIMPSH_CLOSED)
         {
-            fprintf(stderr, "Option \'--command\' failed: pipe already consumed\n");
-            return false;
+            fprintf(stderr, "\'--command\' failed: pipe already consumed, args ");
+            goto fail;
         }
     }
     return true;
+fail:
+    print_actionable_option_with_args(opt);
+    return false;
 }
 
 option_t create_actionable_option(int val, int num_args, char** args)
