@@ -78,11 +78,19 @@ void simpsh_add_command(int pid, option_t command, bool done)
 bool simpsh_get_fd(int index, fd_t* storage)
 {
     if (index < 0 || index >= simpsh_num_fds || 
-        simpsh_fds == NULL || simpsh_fds[index].type == SIMPSH_CLOSED)
+        simpsh_fds == NULL)
     {
         fd_t fd = { -1, SIMPSH_CLOSED };
-        *storage = fd;
+        if (storage)
+            *storage = fd;
         return false;
+    }
+    else if (simpsh_fds[index].type == SIMPSH_CLOSED)
+    {
+        fd_t fd = { -1, SIMPSH_CLOSED };
+        if (storage)
+            *storage = fd;
+        return true;
     }
     if (storage)
         *storage = simpsh_fds[index];
