@@ -176,7 +176,11 @@ SIMPSH_HANDLER(command)
 
         //Close all open file descriptors to prevent leaking fds
         for (int i = 0; i < simpsh_num_fds; i++)
+        {
+            if (i == stdin_logical_fd || i == stdout_logical_fd || i == stderr_logical_fd)
+                continue;
             simpsh_invalidate_fd(i);
+        }
 
         int args_to_program = opt.num_args - 4;
         char** args = &opt.args[3];
