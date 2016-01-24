@@ -114,16 +114,18 @@ bool simpsh_get_command_by_pid(int pid, command_t* storage)
     return false;
 }
 
-void simpsh_invalidate_fd(int index)
+bool simpsh_invalidate_fd(int index)
 {
     if (index < 0 || index >= simpsh_num_fds)
-        return;
+        return false;
     if (simpsh_fds == NULL)
-        return;
+        return false;
     if (simpsh_fds[index].type == SIMPSH_CLOSED)
-        return;
-    close(simpsh_fds[index].fd);
+        return false;
+    if (close(simpsh_fds[index].fd) == -1)
+        return false;
     simpsh_fds[index].type = SIMPSH_CLOSED;
+    return true;
 }
 
 void simpsh_invalidate_command_by_pid(int pid)

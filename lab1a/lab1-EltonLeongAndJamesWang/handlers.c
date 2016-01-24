@@ -308,6 +308,8 @@ SIMPSH_HANDLER(catch)
 
     struct sigaction sa;
     sa.sa_handler = catch_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
     if (sigaction(num, &sa, NULL) == -1)
     {
         fprintf(stderr, "Failed to install signal handler for signal %i\n", num);
@@ -329,16 +331,13 @@ SIMPSH_HANDLER(ignore)
 
     struct sigaction sa;
     sa.sa_handler = ignore_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
     if (sigaction(num, &sa, NULL) == -1)
     {
         fprintf(stderr, "Failed to install signal handler for signal %i\n", num);
         simpsh_error_set_status();
     }
-/*    if (signal(num, SIG_IGN) == SIG_ERR)
-    {
-        fprintf(stderr, "Failed to ignore signal %i\n", num);
-        simpsh_error_set_status();
-    }*/
 }
 
 SIMPSH_HANDLER(default)
@@ -371,8 +370,6 @@ SIMPSH_HANDLER(close)
         fprintf(stderr, "Not a valid logical fd number: %d\n", num);
         return;
     }
-    if (close(fd.fd) == 0)
-        simpsh_invalidate_fd(num);
-    else
+    if (!simpsh_invalidate_fd(num))
         fprintf(stderr, "Failed to close logical fd %d\n", num);
 }
