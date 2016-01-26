@@ -62,3 +62,20 @@ testrun 0 "Report warning if trying to use rdonly file in stderr, without interu
 #Continue execution even after a failed command
 ./simpsh --verbose --wronly $t1 --command 1 2 3 echo foo --command 0 0 0 echo foo
 testrun 1 "Continue execution even after a failed command"
+
+#Close Testing
+./simpsh --wronly $t1 --rdonly $t2 --close 0
+testrun 0 "Properly close an opened file."
+
+./simpsh --wronly $t1 --close 1
+testrun 1 "Fail to close nonexistent file desc."
+
+./simpsh --pipe --close 1 --close 0
+testrun 0 "Close both ends of a pipe."
+
+#Abort Testing
+./simpsh --abort
+if [ $? -eq 139 ]; then
+    echo "TEST SUCCEEDED:"
+    echo "Abort successfully SEGFAULTS"
+fi
