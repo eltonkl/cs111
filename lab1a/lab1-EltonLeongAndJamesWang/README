@@ -7,3 +7,7 @@ James Wang - 904439931
 Limitations: none that we have currently found
 Extra features: none...follows the spec as closely as possible
 
+run make to make:
+run make check to run test cases
+test cases are stored in test.sh. Refer to the Makefile for additional details.
+

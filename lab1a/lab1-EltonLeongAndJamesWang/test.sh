@@ -23,6 +23,10 @@ t3=testfiles/errors
 #The general format of the segment is to run a possible simpsh use and then examine the output to see if it appears to be the proper output
 
 #File opening
+./simpsh --creat --wronly flagtest
+testrun 0 "Test the creat flag for correctness. This also tests flagging in general."
+echo "-------------------------------------------"
+
 ./simpsh --rdonly nosuchfile
 testrun 1 "Report error if no file is available for reading only"
 echo "-------------------------------------------"
@@ -51,14 +55,7 @@ echo "-------------------------------------------"
 ./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 0 1 2 cat $t1 $t2
 testrun 0 "Test case where we open a file for reading, a file for writing, and a file for error writing and execute the cat command."
 echo "-------------------------------------------"
-#Inappropriate action catches
-#./simpsh --rdonly $t1 --rdonly $t2 --wronly $t3 --command 0 1 2 cat $t1 $t2
-#testrun 1 "Report error if command attempts to write to a read only file"
 
-#./simpsh --wronly $t1 --rdonly $t2 --wronly $t3 --command 0 1 2 cat $t1 $t2
-#testrun 1 "Report error if command attempts to read from a write only file"
-
-#Command warnings NOTE: not sure exactly what the exit status of these commands should be. Please advise.
 ./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 1 0 2 cat $t1 $t2
 testrun 0 "Report warning if trying to use rdonly file in stdout and trying to use wronly file in stdin, without interupting execution"
 echo "-------------------------------------------"
@@ -73,6 +70,10 @@ testrun 1 "Continue execution even after a failed command"
 echo "-------------------------------------------"
 
 #Close Testing
+./simpsh --wronly $t1 --close breakthis
+testrun 1 "Give an error if the argument is not a number."
+echo "-------------------------------------------"
+
 ./simpsh --wronly $t1 --rdonly $t2 --close 0
 testrun 0 "Properly close an opened file."
 echo "-------------------------------------------"
@@ -93,12 +94,25 @@ echo "-------------------------------------------"
 #    echo "Abort successfully SEGFAULTS"
 #fi
 
-#ignore testing
+#default/ignore/catch testing
+./simpsh --ignore 11 --abort  --rdonly $t1 --wronly $t2 --wronly $t3 --command 0 1 2 cat $t1 $t2
+testrun 0 "Ignore the segfault and then perform the command properly."
+echo "-------------------------------------------"
 
+./simpsh --catch 11 --abort 
+echo $?
+echo "This value should be 11."
+echo "-------------------------------------------"
 
-#pausetesting
+./simpsh --ignore 11 --catch 11 --default 11 --abort
+echo "This should SEGFAULT without catching anything."
+echo "-------------------------------------------"
+
+#pause testing
 ./simpsh --pause --wronly $t1 --close 0 &
 kill -SIGCONT $!
 testrun 0 "Successful open and close after resuming."
 echo "simpsh was successfully paused and resumed."
 echo "-------------------------------------------"
+
+exit
