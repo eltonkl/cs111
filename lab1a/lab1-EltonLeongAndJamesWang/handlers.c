@@ -371,13 +371,13 @@ SIMPSH_HANDLER(close)
     fd_t fd;
     if (!simpsh_get_fd(num, &fd))
     {
-        fprintf(stderr, "Not a valid logical fd number: %d\n", num);
+        fprintf(stderr, "--close failed: not a valid logical fd number: %d\n", num);
         simpsh_error_set_status();
         return;
     }
     if (!simpsh_invalidate_fd(num))
     {   
-        fprintf(stderr, "Failed to close logical fd %d\n", num);
+        fprintf(stderr, "--close failed: failed to close logical fd %d\n", num);
         simpsh_error_set_status();
     }
 }
