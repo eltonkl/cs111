@@ -375,6 +375,11 @@ SIMPSH_HANDLER(close)
         simpsh_error_set_status();
         return;
     }
+    if (fd.type == SIMPSH_CLOSED)
+    {
+        fprintf(stderr, "--close warning: pipe for logical fd %d was already consumed, not closing anything\n", num);
+        return;
+    }
     if (!simpsh_invalidate_fd(num))
     {   
         fprintf(stderr, "--close failed: failed to close logical fd %d\n", num);
