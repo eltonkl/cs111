@@ -377,7 +377,7 @@ SIMPSH_HANDLER(close)
     }
     if (fd.type == SIMPSH_CLOSED)
     {
-        fprintf(stderr, "--close warning: pipe for logical fd %d was already consumed, not closing anything\n", num);
+        fprintf(stderr, "--close warning: pipe for logical fd %d was already consumed or the file was already closed, not closing anything\n", num);
         return;
     }
     if (!simpsh_invalidate_fd(num))
