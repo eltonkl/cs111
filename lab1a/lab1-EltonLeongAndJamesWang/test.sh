@@ -25,26 +25,32 @@ t3=testfiles/errors
 #File opening
 ./simpsh --rdonly nosuchfile
 testrun 1 "Report error if no file is available for reading only"
+echo "-------------------------------------------"
 
 ./simpsh --wronly nosuchfile
 testrun 1 "Report error if no file is available for writing only"
+echo "-------------------------------------------"
 
 ./simpsh --rdonly $t1
 testrun 0 "Test case where the file exists for reading only and opens correctly"
+echo "-------------------------------------------"
 
 ./simpsh --wronly $t1
 testrun 0 "Test case where the file exists for writing only and opens correctly"
+echo "-------------------------------------------"
 
 #Command call validation
 ./simpsh --command 1 2 3 echo $t1
 testrun 1 "Report error if command attempts to use an out of range file descriptor"
+echo "-------------------------------------------"
 
 ./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 1 2 3
 testrun 1 "Report error if command uses the wrong number of options"
+echo "-------------------------------------------"
 
 ./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 0 1 2 cat $t1 $t2
 testrun 0 "Test case where we open a file for reading, a file for writing, and a file for error writing and execute the cat command."
-
+echo "-------------------------------------------"
 #Inappropriate action catches
 #./simpsh --rdonly $t1 --rdonly $t2 --wronly $t3 --command 0 1 2 cat $t1 $t2
 #testrun 1 "Report error if command attempts to write to a read only file"
@@ -55,27 +61,44 @@ testrun 0 "Test case where we open a file for reading, a file for writing, and a
 #Command warnings NOTE: not sure exactly what the exit status of these commands should be. Please advise.
 ./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 1 0 2 cat $t1 $t2
 testrun 0 "Report warning if trying to use rdonly file in stdout and trying to use wronly file in stdin, without interupting execution"
+echo "-------------------------------------------"
 
 ./simpsh --rdonly $t1 --wronly $t2 --wronly $t3 --command 2 1 0 cat $t1 $t2
 testrun 0 "Report warning if trying to use rdonly file in stderr, without interupting execution"
+echo "-------------------------------------------"
 
 #Continue execution even after a failed command
 ./simpsh --verbose --wronly $t1 --command 1 2 3 echo foo --command 0 0 0 echo foo
 testrun 1 "Continue execution even after a failed command"
+echo "-------------------------------------------"
 
 #Close Testing
 ./simpsh --wronly $t1 --rdonly $t2 --close 0
 testrun 0 "Properly close an opened file."
+echo "-------------------------------------------"
 
 ./simpsh --wronly $t1 --close 1
 testrun 1 "Fail to close nonexistent file desc."
+echo "-------------------------------------------"
 
 ./simpsh --pipe --close 1 --close 0
 testrun 0 "Close both ends of a pipe."
+echo "-------------------------------------------"
 
 #Abort Testing
-./simpsh --abort
-if [ $? -eq 139 ]; then
-    echo "TEST SUCCEEDED:"
-    echo "Abort successfully SEGFAULTS"
-fi
+#This works.
+#./simpsh --abort
+#if [ $? -eq 139 ]; then
+#    echo "TEST SUCCEEDED:"
+#    echo "Abort successfully SEGFAULTS"
+#fi
+
+#ignore testing
+
+
+#pausetesting
+./simpsh --pause --wronly $t1 --close 0 &
+kill -SIGCONT $!
+testrun 0 "Successful open and close after resuming."
+echo "simpsh was successfully paused and resumed."
+echo "-------------------------------------------"
