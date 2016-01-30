@@ -16,12 +16,12 @@ bool            simpsh_profile_perf;
 struct rusage   simpsh_rusage_parent_last;
 struct rusage   simpsh_rusage_child_last;
 
-int         simpsh_max_fds;
-int         simpsh_max_commands;
-int         simpsh_num_fds;
-int         simpsh_num_commands;
-fd_t*       simpsh_fds;
-command_t*  simpsh_commands;
+int             simpsh_max_fds;
+int             simpsh_max_commands;
+int             simpsh_num_fds;
+int             simpsh_num_commands;
+fd_t*           simpsh_fds;
+command_t*      simpsh_commands;
 
 bool is_exact_copy(const char* a, const char* b)
 {
@@ -151,8 +151,8 @@ void simpsh_invalidate_command_by_pid(int pid)
 
 void simpsh_print_rusage(const struct rusage* rusage)
 {
-    printf("Total user CPU time used: %ld.%06ld\n\
-Total system CPU time used: %ld.%06ld\n",
+    printf("Total user CPU time elapsed: %ld.%06ld\n\
+Total system CPU time elapsed: %ld.%06ld\n",
             rusage->ru_utime.tv_sec, rusage->ru_utime.tv_usec,
             rusage->ru_stime.tv_sec, rusage->ru_stime.tv_usec);
     fflush(stdout);
@@ -162,8 +162,8 @@ void simpsh_print_rusage_diff(const struct rusage* old_usage, const struct rusag
 {
     struct timeval diff_utime = { new_usage->ru_utime.tv_sec - old_usage->ru_utime.tv_sec, new_usage->ru_utime.tv_usec - old_usage->ru_utime.tv_usec };
     struct timeval diff_stime = { new_usage->ru_stime.tv_sec - old_usage->ru_stime.tv_sec, new_usage->ru_stime.tv_usec - old_usage->ru_stime.tv_usec };
-    printf("User CPU time used: %ld.%06ld\n\
-System CPU time used: %ld.%06ld\n",
+    printf("User CPU time elapsed: %ld.%06ld\n\
+System CPU time elapsed: %ld.%06ld\n",
             diff_utime.tv_sec, diff_utime.tv_usec,
             diff_stime.tv_sec, diff_stime.tv_usec);
     fflush(stdout);

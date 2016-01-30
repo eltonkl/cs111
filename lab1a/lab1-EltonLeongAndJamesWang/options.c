@@ -100,6 +100,8 @@ void execute_actionable_option(option_t opt)
     opt.handler(opt);
     if (simpsh_profile_perf)
     {
+        printf("Parent resource usage for ");
+        print_actionable_option_with_args(opt);
         getrusage(RUSAGE_SELF, &new_rusage);
         simpsh_print_rusage_diff(&simpsh_rusage_parent_last, &new_rusage);
         simpsh_rusage_parent_last = new_rusage;

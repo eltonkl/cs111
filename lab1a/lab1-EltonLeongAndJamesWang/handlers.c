@@ -273,7 +273,8 @@ SIMPSH_HANDLER(wait)
         else
 	{
 	    struct rusage child_rusage; 
-	    getrusage(RUSAGE_CHILDREN, &child_rusage);
+	    printf("Child resource usage:\n");
+            getrusage(RUSAGE_CHILDREN, &child_rusage);
 	    simpsh_print_rusage_diff(&simpsh_rusage_child_last, &child_rusage);
             simpsh_rusage_child_last = child_rusage;
             handle_and_print_command(status, command);
@@ -293,6 +294,7 @@ SIMPSH_HANDLER(wait)
             if (!simpsh_get_command_by_pid(pid, &command))
 	      continue;
 	    struct rusage child_rusage; 
+	    printf("Child resource usage:\n");
 	    getrusage(RUSAGE_CHILDREN, &child_rusage);
 	    simpsh_print_rusage_diff(&simpsh_rusage_child_last, &child_rusage);
             simpsh_rusage_child_last = child_rusage;
@@ -313,9 +315,9 @@ SIMPSH_HANDLER(profile)
     simpsh_profile_perf = true;
     getrusage(RUSAGE_SELF, &simpsh_rusage_parent_last);
     getrusage(RUSAGE_CHILDREN, &simpsh_rusage_child_last);
-    printf("Parent resource usage until --profile: ");
+    printf("Parent resource usage until --profile:\n");
     simpsh_print_rusage(&simpsh_rusage_parent_last);
-    printf("Child resource usage until --profile: ");
+    printf("Child resource usage until --profile:\n");
     simpsh_print_rusage(&simpsh_rusage_child_last);
 }
 
