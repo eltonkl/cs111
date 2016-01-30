@@ -255,6 +255,10 @@ static void handle_and_print_command(int status, command_t command)
 
 SIMPSH_HANDLER(wait)
 {
+
+    
+  //Design problem code
+  //If there is an argument given, then we wait specifically for that one command.
     if (opt.num_args != 0)
     {
         int num;
@@ -273,9 +277,17 @@ SIMPSH_HANDLER(wait)
             return;
         }
         else
+	{
+	    struct rusage child_rusage; 
+	    getrusage(RUSAGE_CHILDREN, &child_rusage);
+	    simpsh_print_rusage_diff(&simpsh_rusage_child_last, &child_rusage);
             handle_and_print_command(status, command);
+	}
+	
         return;
     }
+
+    //Otherwise we wait for every command that we can possibly wait for, like in the original implementation
     do
     {
         int status;
@@ -284,7 +296,10 @@ SIMPSH_HANDLER(wait)
         {
             command_t command;
             if (!simpsh_get_command_by_pid(pid, &command))
-                continue;
+	      continue;
+	    struct rusage child_rusage; 
+	    getrusage(RUSAGE_CHILDREN, &child_rusage);
+	    simpsh_print_rusage_diff(&simpsh_rusage_child_last, &child_rusage);
             handle_and_print_command(status, command);
         }
     } while(have_waitable_commands());
