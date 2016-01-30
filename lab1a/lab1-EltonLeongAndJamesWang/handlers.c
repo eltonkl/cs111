@@ -146,7 +146,11 @@ SIMPSH_HANDLER(pipe)
 }
 
 SIMPSH_HANDLER(command)
-{ 
+{
+    struct rusage new_parent_rusage;
+    if (simpsh_profile_perf)
+        getrusage(RUSAGE_SELF, &new_parent_rusage);
+
     int stdin_logical_fd = (int)strtol(opt.args[0], NULL, 0);
     int stdout_logical_fd = (int)strtol(opt.args[1], NULL, 0);
     int stderr_logical_fd = (int)strtol(opt.args[2], NULL, 0);
@@ -158,8 +162,13 @@ SIMPSH_HANDLER(command)
     //Fork the pipes, deal with edge cases involving pipes in the child and
     //parent separately
     int pid = fork();
+    if (pid == -1)
+    {
+        fprintf(stderr, "Error: fork failed\n");
+        simpsh_error_set_status();
+    }
     if (pid == 0)
-    {               
+    {
         if (stdin_fd.type == SIMPSH_PIPE_WRITE)
             fprintf(stderr, "Warning: attempt to assign write pipe to stdin\n");
         if (stdout_fd.type == SIMPSH_PIPE_READ)
