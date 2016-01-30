@@ -53,6 +53,8 @@ bool simpsh_get_command_by_index(int index, command_t* storage);
 bool simpsh_get_command_by_pid(int pid, command_t* storage);
 bool simpsh_invalidate_fd(int index);
 void simpsh_invalidate_command_by_pid(int pid);
+void simpsh_print_rusage(const struct rusage* rusage);
+void simpsh_print_rusage_diff(const struct rusage* old_usage, const struct rusage* new_usage);
 
 extern int append_flag;
 extern int cloexec_flag;

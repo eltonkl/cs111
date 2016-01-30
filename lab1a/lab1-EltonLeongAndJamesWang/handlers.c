@@ -147,10 +147,6 @@ SIMPSH_HANDLER(pipe)
 
 SIMPSH_HANDLER(command)
 {
-    struct rusage new_parent_rusage;
-    if (simpsh_profile_perf)
-        getrusage(RUSAGE_SELF, &new_parent_rusage);
-
     int stdin_logical_fd = (int)strtol(opt.args[0], NULL, 0);
     int stdout_logical_fd = (int)strtol(opt.args[1], NULL, 0);
     int stderr_logical_fd = (int)strtol(opt.args[2], NULL, 0);
@@ -302,6 +298,10 @@ SIMPSH_HANDLER(profile)
     simpsh_profile_perf = true;
     getrusage(RUSAGE_SELF, &simpsh_rusage_parent_last);
     getrusage(RUSAGE_CHILDREN, &simpsh_rusage_child_last);
+    printf("Parent resource usage until --profile: ");
+    simpsh_print_rusage(&simpsh_rusage_parent_last);
+    printf("Child resource usage until --profile: ");
+    simpsh_print_rusage(&simpsh_rusage_child_last);
 }
 
 SIMPSH_HANDLER(abort)

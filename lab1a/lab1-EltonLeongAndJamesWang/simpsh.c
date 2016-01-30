@@ -149,6 +149,26 @@ void simpsh_invalidate_command_by_pid(int pid)
     }
 }
 
+void simpsh_print_rusage(const struct rusage* rusage)
+{
+    printf("Total user CPU time used: %ld.%06ld\n\
+Total system CPU time used: %ld.%06ld\n",
+            rusage->ru_utime.tv_sec, rusage->ru_utime.tv_usec,
+            rusage->ru_stime.tv_sec, rusage->ru_stime.tv_usec);
+    fflush(stdout);
+}
+
+void simpsh_print_rusage_diff(const struct rusage* old_usage, const struct rusage* new_usage)
+{
+    struct timeval diff_utime = { new_usage->ru_utime.tv_sec - old_usage->ru_utime.tv_sec, new_usage->ru_utime.tv_usec - old_usage->ru_utime.tv_usec };
+    struct timeval diff_stime = { new_usage->ru_stime.tv_sec - old_usage->ru_stime.tv_sec, new_usage->ru_stime.tv_usec - old_usage->ru_stime.tv_usec };
+    printf("User CPU time used: %ld.%06ld\n\
+System CPU time used: %ld.%06ld\n",
+            diff_utime.tv_sec, diff_utime.tv_usec,
+            diff_stime.tv_sec, diff_stime.tv_usec);
+    fflush(stdout);
+}
+
 void simpsh_init(int argc, char** argv)
 {
     zero_flags();

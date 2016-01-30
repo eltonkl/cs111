@@ -91,12 +91,19 @@ option_t create_actionable_option(int val, int num_args, char** args)
 
 void execute_actionable_option(option_t opt)
 {
+    struct rusage new_rusage;
     //Control whether or not we use verbose
     if (simpsh_print_verbose)
         print_actionable_option_with_args(opt);
     //This function will execute the option
     //The argument is a function pointer to the handler that we want, these can be found in handlers.c/handlers.h
     opt.handler(opt);
+    if (simpsh_profile_perf)
+    {
+        getrusage(RUSAGE_SELF, &new_rusage);
+        simpsh_print_rusage_diff(&simpsh_rusage_parent_last, &new_rusage);
+        simpsh_rusage_parent_last = new_rusage;
+    }
 }
 
 void print_actionable_option_with_args(option_t opt)
