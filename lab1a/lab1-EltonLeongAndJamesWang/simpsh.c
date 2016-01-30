@@ -3,14 +3,18 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/resource.h>
 
 #include "simpsh.h"
 #include "handlers.h"
 
-jmp_buf     simpsh_context;
-int         simpsh_last_signal;
-int         simpsh_max_status;
-bool        simpsh_print_verbose;
+jmp_buf         simpsh_context;
+int             simpsh_last_signal;
+int             simpsh_max_status;
+bool            simpsh_print_verbose;
+bool            simpsh_profile_perf;
+struct rusage   simpsh_rusage_parent_last;
+struct rusage   simpsh_rusage_child_last;
 
 int         simpsh_max_fds;
 int         simpsh_max_commands;

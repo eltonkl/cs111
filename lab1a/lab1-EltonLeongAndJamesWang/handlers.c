@@ -290,6 +290,9 @@ SIMPSH_HANDLER(verbose)
 SIMPSH_HANDLER(profile)
 {
     (void)opt;
+    simpsh_profile_perf = true;
+    getrusage(RUSAGE_SELF, &simpsh_rusage_parent_last);
+    getrusage(RUSAGE_CHILDREN, &simpsh_rusage_child_last);
 }
 
 SIMPSH_HANDLER(abort)

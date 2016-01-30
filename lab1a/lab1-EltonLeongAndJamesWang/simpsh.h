@@ -3,6 +3,7 @@
 
 #include <setjmp.h>
 #include <stdbool.h>
+#include <sys/resource.h>
 
 #include "options.h"
 
@@ -12,6 +13,9 @@ extern jmp_buf          simpsh_context;
 extern int              simpsh_last_signal;
 extern int              simpsh_max_status;
 extern bool             simpsh_print_verbose;
+extern bool             simpsh_profile_perf;
+extern struct rusage    simpsh_rusage_parent_last;
+extern struct rusage    simpsh_rusage_child_last;
 
 typedef struct command_t
 {
