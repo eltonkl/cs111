@@ -300,6 +300,9 @@ SIMPSH_HANDLER(abort)
 
 static void catch_handler(int signo)
 {
+    sigset_t set;
+    sigfillset(&set);
+    sigprocmask(SIG_BLOCK, &set, NULL);
     fprintf(stderr, "%i caught\n", signo);
     exit(signo);
 }
