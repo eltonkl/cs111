@@ -272,14 +272,16 @@ SIMPSH_HANDLER(wait)
         }
         else
 	{
-	    struct rusage child_rusage; 
-	    printf("Child resource usage:\n");
-            getrusage(RUSAGE_CHILDREN, &child_rusage);
-	    simpsh_print_rusage_diff(&simpsh_rusage_child_last, &child_rusage);
-            simpsh_rusage_child_last = child_rusage;
+	    struct rusage child_rusage;
             handle_and_print_command(status, command);
-	}
-	
+            if (simpsh_profile_perf)
+            {
+                printf("Child resource usage for --wait %d:\n", command.pid);
+                getrusage(RUSAGE_CHILDREN, &child_rusage);
+                simpsh_print_rusage_diff(&simpsh_rusage_child_last, &child_rusage);
+                simpsh_rusage_child_last = child_rusage;
+	    }
+        }
         return;
     }
 
@@ -292,13 +294,16 @@ SIMPSH_HANDLER(wait)
         {
             command_t command;
             if (!simpsh_get_command_by_pid(pid, &command))
-	      continue;
-	    struct rusage child_rusage; 
-	    printf("Child resource usage:\n");
-	    getrusage(RUSAGE_CHILDREN, &child_rusage);
-	    simpsh_print_rusage_diff(&simpsh_rusage_child_last, &child_rusage);
-            simpsh_rusage_child_last = child_rusage;
+	        continue;
+	    struct rusage child_rusage;
             handle_and_print_command(status, command);
+            if (simpsh_profile_perf)
+            {
+                printf("Child resource usage for the just terminated child:\n");
+                getrusage(RUSAGE_CHILDREN, &child_rusage);
+                simpsh_print_rusage_diff(&simpsh_rusage_child_last, &child_rusage);
+                simpsh_rusage_child_last = child_rusage;
+            }
         }
     } while(have_waitable_commands());
 }

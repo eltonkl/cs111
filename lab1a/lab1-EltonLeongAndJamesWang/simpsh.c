@@ -172,6 +172,10 @@ System CPU time elapsed: %ld.%06ld\n",
 void simpsh_init(int argc, char** argv)
 {
     zero_flags();
+    /*for (int i = 0; i < 100000000; i++)
+    {
+        int x = 5;
+    }*/
     simpsh_init_fd_pid_storage(argc, argv);
 }
 
