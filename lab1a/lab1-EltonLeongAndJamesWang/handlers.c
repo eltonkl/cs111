@@ -262,12 +262,14 @@ SIMPSH_HANDLER(wait)
         if (!simpsh_get_command_by_index(num, &command))
         {
             fprintf(stderr, "Option \'--wait\' failed: not a valid logical PID number: %s\n", opt.args[0]);
+            simpsh_error_set_status();
             return;
         }
         int status;
         if (waitpid(command.pid, &status, 0) == -1)
         {
             fprintf(stderr, "Failed to wait for PID %d\n", command.pid);
+            simpsh_error_set_status();
             return;
         }
         else
