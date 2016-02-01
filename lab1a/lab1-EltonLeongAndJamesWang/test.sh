@@ -115,4 +115,19 @@ testrun 0 "Successful open and close after resuming."
 echo "simpsh was successfully paused and resumed."
 echo "-------------------------------------------"
 
+#wait design problem testing
+
+./simpsh --pipe --command 0 1 1 ls --wait 0
+testrun 0 "Successful wait with an argument."
+echo "-------------------------------------------"
+
+./simpsh --pipe --command 0 1 1 ls --wait 1
+testrun 1 "Realize that wait has an argument, and that it's invalid."
+echo "-------------------------------------------"
+
+./simpsh --rdonly testfiles/foo --creat --wronly err --pipe --pipe --pipe --pipe --pipe --pipe --command 0 3 1 cat /dev/urandom --command 2 5 1 tr -dc 'a-zA-Z0-9' --command 4 7 1 head -c 100M --command 6 1 1 grep 'James' --command 0 9 1 cat /dev/urandom --command 8 11 1 tr -dc 'a-zA-Z0-9' --command 10 13 1 head -c 10M --command 12 1 1 grep 'James' --wait 6
+echo "This should take <12 seconds."
+echo "Note that if we perform a normal wait the 100M command would take around a minute, thus confirming that this works."
+echo "-------------------------------------------"
+
 exit
