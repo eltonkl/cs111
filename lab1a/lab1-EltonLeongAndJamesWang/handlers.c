@@ -268,21 +268,25 @@ SIMPSH_HANDLER(wait)
         int status;
         if (waitpid(command.pid, &status, 0) == -1)
         {
+<<<<<<< HEAD
             fprintf(stderr, "Failed to wait for PID %d\n", command.pid);
             simpsh_error_set_status();
+=======
+            fprintf(stderr, "Failed to wait for logical PID %d\n", num);
+>>>>>>> f9269e8b08fcbb162637c3eda6cdf8a508012204
             return;
         }
         else
-	{
-	    struct rusage child_rusage;
+        {
+            struct rusage child_rusage;
             handle_and_print_command(status, command);
             if (simpsh_profile_perf)
             {
-                printf("Child resource usage for --wait %d:\n", command.pid);
+                printf("Child resource usage for --wait %d:\n", num);
                 getrusage(RUSAGE_CHILDREN, &child_rusage);
                 simpsh_print_rusage_diff(&simpsh_rusage_child_last, &child_rusage);
                 simpsh_rusage_child_last = child_rusage;
-	    }
+            }
         }
         return;
     }
@@ -296,8 +300,8 @@ SIMPSH_HANDLER(wait)
         {
             command_t command;
             if (!simpsh_get_command_by_pid(pid, &command))
-	        continue;
-	    struct rusage child_rusage;
+                continue;
+            struct rusage child_rusage;
             handle_and_print_command(status, command);
             if (simpsh_profile_perf)
             {
