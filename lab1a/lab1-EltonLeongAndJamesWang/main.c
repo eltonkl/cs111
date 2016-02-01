@@ -97,6 +97,17 @@ int main(int argc, char** argv)
             opt = create_actionable_option(c, 0, 0);
         execute_actionable_option(opt);
     }
+    if (simpsh_profile_perf)
+    {
+        struct rusage total_self_usage;
+        struct rusage total_child_usage;
+        getrusage(RUSAGE_SELF, &total_self_usage);
+        getrusage(RUSAGE_CHILDREN, &total_child_usage);
+        printf("Total parent resource usage\n");
+        simpsh_print_rusage(&simpsh_rusage_parent_last);
+        printf("Total child resource usage\n");
+        simpsh_print_rusage(&simpsh_rusage_child_last);
+    }
     simpsh_finish();
     return simpsh_max_status;
 }
