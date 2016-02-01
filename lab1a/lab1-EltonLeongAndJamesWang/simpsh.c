@@ -161,9 +161,9 @@ Total system CPU time elapsed: %ld.%06ld\n",
 void simpsh_print_rusage_diff(const struct rusage* old_usage, const struct rusage* new_usage)
 {
     double user_time_elapsed = new_usage->ru_utime.tv_sec + new_usage->ru_utime.tv_usec/1e6
-                               - (old_usage->ru_utime.tv_sec - old_usage->ru_utime.tv_usec/1e6);
+                               - (old_usage->ru_utime.tv_sec + old_usage->ru_utime.tv_usec/1e6);
     double sys_time_elapsed = new_usage->ru_stime.tv_sec + new_usage->ru_stime.tv_usec/1e6
-                              - (old_usage->ru_stime.tv_sec - old_usage->ru_stime.tv_usec/1e6);
+                              - (old_usage->ru_stime.tv_sec + old_usage->ru_stime.tv_usec/1e6);
     printf("User CPU time elapsed: %.6f\n\
 System CPU time elapsed: %.6f\n", user_time_elapsed, sys_time_elapsed);
     fflush(stdout);
