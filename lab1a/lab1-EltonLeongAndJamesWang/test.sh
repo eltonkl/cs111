@@ -130,4 +130,5 @@ echo "This should take <12 seconds."
 echo "Note that if we perform a normal wait the 100M command would take around a minute, thus confirming that this works."
 echo "-------------------------------------------"
 
+
 exit
