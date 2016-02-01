@@ -286,26 +286,47 @@ SIMPSH_HANDLER(wait)
     }
 
     //Otherwise we wait for every command that we can possibly wait for, like in the original implementation
-    do
+    if (!simpsh_profile_perf)
     {
-        int status;
-        int pid = wait(&status);
-        if (pid != -1)
+        do
+        {
+            int status;
+            int pid = wait(&status);
+            if (pid != -1)
+            {
+                command_t command;
+                if (!simpsh_get_command_by_pid(pid, &command))
+	            continue;
+                handle_and_print_command(status, command);
+            }
+        } while(have_waitable_commands());
+    }
+    else
+    {
+        int i;
+        for (i = 0; i < simpsh_num_commands; i++)
         {
             command_t command;
-            if (!simpsh_get_command_by_pid(pid, &command))
-	        continue;
-	    struct rusage child_rusage;
-            handle_and_print_command(status, command);
-            if (simpsh_profile_perf)
-            {
-                printf("Child resource usage for the just terminated child:\n");
-                getrusage(RUSAGE_CHILDREN, &child_rusage);
-                simpsh_print_rusage_diff(&simpsh_rusage_child_last, &child_rusage);
-                simpsh_rusage_child_last = child_rusage;
-            }
+            simpsh_get_command_by_index(i, &command);
+            if (!command.done)
+                break;
         }
-    } while(have_waitable_commands());
+        for (; i < simpsh_num_commands; i++)
+        {
+            command_t command;
+            simpsh_get_command_by_index(i, &command);
+            int status;
+            int retval = waitpid(command.pid, &status, 0);
+            if (retval == -1)
+                continue;
+            handle_and_print_command(status, command);
+	    struct rusage child_rusage;
+            printf("Child resource usage for the just terminated child:\n");
+            getrusage(RUSAGE_CHILDREN, &child_rusage);
+            simpsh_print_rusage_diff(&simpsh_rusage_child_last, &child_rusage);
+            simpsh_rusage_child_last = child_rusage;
+        }
+    }
 }
 
 SIMPSH_HANDLER(verbose)
