@@ -268,12 +268,8 @@ SIMPSH_HANDLER(wait)
         int status;
         if (waitpid(command.pid, &status, 0) == -1)
         {
-<<<<<<< HEAD
-            fprintf(stderr, "Failed to wait for PID %d\n", command.pid);
-            simpsh_error_set_status();
-=======
             fprintf(stderr, "Failed to wait for logical PID %d\n", num);
->>>>>>> f9269e8b08fcbb162637c3eda6cdf8a508012204
+            simpsh_error_set_status();
             return;
         }
         else
