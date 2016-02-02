@@ -7,6 +7,8 @@ James Wang - 904439931
 Limitations: none that we have currently found
 Extra features: --wait N design project for lab 1B
 
+Profile details for Lab 1C stored in profile/profile.pdf
+
 run make to make:
 run make check to run test cases
 test cases are stored in test.sh. Refer to the Makefile for additional details.
