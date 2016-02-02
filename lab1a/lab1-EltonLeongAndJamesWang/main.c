@@ -4,6 +4,7 @@
 #include <getopt.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <sys/resource.h>
 
 #include "simpsh.h"
 #include "options.h"
@@ -30,12 +31,21 @@ int main(int argc, char** argv)
             break;
         else if (c == 0)
         {
+            struct rusage new_rusage;
             //Flag was set
             if (simpsh_print_verbose)
             {
                 printf("--%s\n", long_options[option_index].name);
                 fflush(stdout);
             }
+            if (simpsh_profile_perf)
+            {
+                printf("Parent resource usage for ");
+                printf("--%s\n", long_options[option_index].name);
+                getrusage(RUSAGE_SELF, &new_rusage);
+                simpsh_print_rusage_diff(&simpsh_rusage_parent_last, &new_rusage);
+                simpsh_rusage_parent_last = new_rusage;
+    	    }
             continue;
         }
         else if (c == '?')
