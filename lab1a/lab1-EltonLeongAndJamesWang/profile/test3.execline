@@ -1,0 +1,10 @@
+#!/bin/execlineb
+time -p foreground {
+redirfd -r 0 testfiles/foo
+redirfd -w 1 /dev/null
+redirfd -w 2 err2
+pipeline
+od -ta -f -N 2000000 /dev/urandom
+""
+sort
+}
