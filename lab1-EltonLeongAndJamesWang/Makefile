@@ -13,4 +13,5 @@ check: simpsh
 dist: check clean
 	cd .. && tar -zcvf lab1-$(NAME)/lab1-$(NAME).tar.gz lab1-$(NAME)/*.c lab1-$(NAME)/*.h lab1-$(NAME)/Makefile lab1-$(NAME)/README lab1-$(NAME)/*.sh lab1-$(NAME)/*/*
 clean: 
-	rm -f *.o *.tar.gz simpsh
+	rm -f *.o *.tar.gz simpsh err flagtest testfiles/errors
+	touch testfiles/errors
