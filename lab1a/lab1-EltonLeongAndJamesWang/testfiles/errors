@@ -1,2 +1,0 @@
-cat: testfiles/foo: input file is output file
-cat: write error: Bad file descriptor
