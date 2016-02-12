@@ -122,7 +122,22 @@ static void osprd_process_request(osprd_info_t *d, struct request *req)
 
 	// Your code here.
 	eprintk("Should process request...\n");
-
+        unsigned long offset = req->sector * SECTOR_SIZE;
+        unsigned long nbytes = req->nr_sectors * SECTOR_SIZE;
+        if (offset + nbytes > nsectors * SECTOR_SIZE)
+        {
+            eprintk("Error: attempt to read past the bounds of the ramdisk\n");
+            end_request(req, 0);
+            return;
+        }
+        if (rq_data_dir(req) == READ)
+        {
+            memcpy(d->data + offset, req->buffer, nbytes);
+        }
+        else
+        {
+            memcpy(req->buffer, d->data + offset, nbytes);
+        }
 	end_request(req, 1);
 }
 
