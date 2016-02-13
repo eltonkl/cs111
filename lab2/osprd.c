@@ -107,6 +107,7 @@ static void for_each_open_file(struct task_struct *task,
  */
 static void osprd_process_request(osprd_info_t *d, struct request *req)
 {
+        unsigned long offset, nbytes;
 	if (!blk_fs_request(req)) {
 		end_request(req, 0);
 		return;
@@ -121,9 +122,9 @@ static void osprd_process_request(osprd_info_t *d, struct request *req)
 	// 'req->buffer' members, and the rq_data_dir() function.
 
 	// Your code here.
-	eprintk("Should process request...\n");
-        unsigned long offset = req->sector * SECTOR_SIZE;
-        unsigned long nbytes = req->nr_sectors * SECTOR_SIZE;
+	//eprintk("Should process request...\n");
+        offset = req->sector * SECTOR_SIZE;
+        nbytes = req->current_nr_sectors * SECTOR_SIZE;
         if (offset + nbytes > nsectors * SECTOR_SIZE)
         {
             eprintk("Error: attempt to read past the bounds of the ramdisk\n");
@@ -132,11 +133,13 @@ static void osprd_process_request(osprd_info_t *d, struct request *req)
         }
         if (rq_data_dir(req) == READ)
         {
-            memcpy(d->data + offset, req->buffer, nbytes);
+            eprintk("Reading %u sectors from sector %lu\n", req->current_nr_sectors, (unsigned long)req->sector);
+            memcpy(req->buffer, d->data + offset, nbytes);
         }
         else
         {
-            memcpy(req->buffer, d->data + offset, nbytes);
+            eprintk("Writing %u sectors to sector %lu\n", req->current_nr_sectors, (unsigned long)req->sector);
+            memcpy(d->data + offset, req->buffer, nbytes);
         }
 	end_request(req, 1);
 }
