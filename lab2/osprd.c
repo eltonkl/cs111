@@ -141,16 +141,12 @@ static void osprd_process_request(osprd_info_t *d, struct request *req)
         if (rq_data_dir(req) == READ)
         {
             //eprintk("Reading %u sectors from sector %lu\n", req->current_nr_sectors, (unsigned long)req->sector);
-            osp_spin_lock(&d->mutex);
             memcpy(req->buffer, d->data + offset, nbytes);
-            osp_spin_unlock(&d->mutex);
         }
         else
         {
             //eprintk("Writing %u sectors to sector %lu\n", req->current_nr_sectors, (unsigned long)req->sector);
-            osp_spin_lock(&d->mutex);
             memcpy(d->data + offset, req->buffer, nbytes);
-            osp_spin_unlock(&d->mutex);
         }
 	end_request(req, 1);
 }
