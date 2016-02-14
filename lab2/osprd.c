@@ -68,10 +68,15 @@ typedef struct osprd_info {
 	wait_queue_head_t blockq;       // Wait queue for tasks blocked on
 					// the device lock
 
-        unsigned num_read_locks;
-        unsigned is_write_locked;
-        pid_t writer_pid;
-        reader_list_t readers;
+        unsigned num_read_locks;        // Number of read locks
+
+        unsigned is_write_locked;       // bool indicating if device is write
+                                        // locked
+
+        pid_t writer_pid;               // If device is write locked,
+                                        // PID of the write lock owner
+
+        reader_list_t readers;          // Linked list of reader PIDs
 
 	// The following elements are used internally; you don't need
 	// to understand them.
@@ -266,19 +271,37 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 {
                     r = -ERESTARTSYS;
                 }
-                //detect deadlock
                 else
                 {
                     int deadlocked;
                     deadlocked = 0;
                     r = -EDEADLK;
-
-                    if (!deadlocked) //Write lock the ramdisk
+                    osp_spin_lock(&d->mutex);
+                    list_for_each(pos, &d->readers.list)
+                    {
+                        reader_list_t* cur;
+                        cur = list_entry(pos, reader_list_t, list);
+                        if (filp_writable) //Check if owner of read lock is attempting to acquire a write lock
+                        {
+                            if (cur->pid == current->pid)
+                            {
+                                deadlocked = 1;
+                                break;
+                            }
+                        }
+                        else //Check if owner of write lock is attempting to acquire a read lock
+                        {
+                            if (d->is_write_locked && d->writer_pid == cur->pid)
+                            {
+                                deadlocked = 1;
+                                break;
+                            }
+                        }
+                    }
+                    if (!deadlocked && filp_writable) //Write lock the ramdisk
                     { 
-                        osp_spin_lock(&d->mutex);
                         d->is_write_locked = 1;
                         d->writer_pid = current->pid;
-                        osp_spin_unlock(&d->mutex);
                         filp->f_flags |= F_OSPRD_LOCKED;
                         r = 0;
                     }
@@ -293,12 +316,11 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                         {
                             filp->f_flags |= F_OSPRD_LOCKED;
                             entry->pid = current->pid;
-                            osp_spin_lock(&d->mutex);
                             list_add(&entry->list, &d->readers.list);
-                            osp_spin_unlock(&d->mutex);
                             r = 0;
                         }
                     }
+                    osp_spin_unlock(&d->mutex);
                 }
                 osp_spin_lock(&d->mutex);
                 d->ticket_head++;
