@@ -13,6 +13,7 @@
 #include <linux/blkdev.h>
 #include <linux/wait.h>
 #include <linux/file.h>
+#include <linux/list.h>
 
 #include "spinlock.h"
 #include "osprd.h"
@@ -44,6 +45,11 @@ MODULE_AUTHOR("Elton Leong and James Wang");
 static int nsectors = 32;
 module_param(nsectors, int, 0);
 
+typedef struct reader_list
+{
+    struct list_head list;
+    int ticket_num;
+} reader_list_t;
 
 /* The internal representation of our device. */
 typedef struct osprd_info {
@@ -62,8 +68,9 @@ typedef struct osprd_info {
 	wait_queue_head_t blockq;       // Wait queue for tasks blocked on
 					// the device lock
 
-	/* HINT: You may want to add additional fields to help
-	         in detecting deadlock. */
+        unsigned num_read_locks;
+        unsigned num_write_locks;
+        reader_list_t readers;
 
 	// The following elements are used internally; you don't need
 	// to understand them.
@@ -133,12 +140,12 @@ static void osprd_process_request(osprd_info_t *d, struct request *req)
         }
         if (rq_data_dir(req) == READ)
         {
-            eprintk("Reading %u sectors from sector %lu\n", req->current_nr_sectors, (unsigned long)req->sector);
+            //eprintk("Reading %u sectors from sector %lu\n", req->current_nr_sectors, (unsigned long)req->sector);
             memcpy(req->buffer, d->data + offset, nbytes);
         }
         else
         {
-            eprintk("Writing %u sectors to sector %lu\n", req->current_nr_sectors, (unsigned long)req->sector);
+            //eprintk("Writing %u sectors to sector %lu\n", req->current_nr_sectors, (unsigned long)req->sector);
             memcpy(d->data + offset, req->buffer, nbytes);
         }
 	end_request(req, 1);
@@ -197,11 +204,9 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 	// is file open for writing?
 	int filp_writable = (filp->f_mode & FMODE_WRITE) != 0;
 
-	// This line avoids compiler warnings; you may remove it.
-	(void) filp_writable, (void) d;
-
 	// Set 'r' to the ioctl's return value: 0 on success, negative on error
-
+        int res;
+        int local_ticket;
 	if (cmd == OSPRDIOCACQUIRE) {
 
 		// EXERCISE: Lock the ramdisk.
@@ -239,10 +244,49 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// (Some of these operations are in a critical section and must
 		// be protected by a spinlock; which ones?)
 
-		// Your code here (instead of the next two lines).
-		eprintk("Attempting to acquire\n");
-		r = -ENOTTY;
-
+                osp_spin_lock(&d->mutex);
+                local_ticket = d->ticket_tail;
+                d->ticket_tail++;
+                osp_spin_unlock(&d->mutex);
+		res = wait_event_interruptible(d->blockq,
+                        local_ticket == d->ticket_head &&
+                        (d->num_write_locks == 0 || !filp_writable ||
+                        d->num_read_locks == 0));
+                if (!res)
+                {
+                    r = -1;
+                }
+                else if (res == ERESTARTSYS)
+                {
+                    r = -ERESTARTSYS;
+                }
+                //detect deadlock
+                //else if (...)
+                //{
+                //  r = -EDEADLK;
+                //}
+                else if (filp_writable) //Write lock the ramdisk
+                {
+                    
+                    r = 0;
+                }
+                else //Read lock the ramdisk
+                {
+                    struct reader_list* entry = kmalloc(sizeof(reader_list_t), 0);
+                    if (entry == NULL)
+                    {
+                        r = -ENOMEM;
+                    }
+                    else
+                    {
+                        entry->ticket_num = local_ticket;
+                        list_add(&entry->list, &d->readers.list);
+                        //Read lock code goes here
+                        r = 0;
+                    }
+                }
+                //eprintk("Attempting to acquire\n");
+		//r = -ENOTTY;
 	} else if (cmd == OSPRDIOCTRYACQUIRE) {
 
 		// EXERCISE: ATTEMPT to lock the ramdisk.
@@ -283,6 +327,9 @@ static void osprd_setup(osprd_info_t *d)
 	osp_spin_lock_init(&d->mutex);
 	d->ticket_head = d->ticket_tail = 0;
 	/* Add code here if you add fields to osprd_info_t. */
+        d->num_read_locks = 0;
+        d->num_write_locks = 0;
+        INIT_LIST_HEAD(&d->readers.list);
 }
 
 
