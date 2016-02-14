@@ -325,7 +325,30 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// you need, and return 0.
 
 		// Your code here (instead of the next line).
-		r = -ENOTTY;
+		
+		//If the file hasn't locked the ramdisk, return -EINVAL
+		if(filp->f_flags & F_OSPRD_LOCKED == 0)
+			r = -EINVAL;
+
+		//Lock to prepare for performing the free
+		osp_spin_lock(&d->mutex);
+
+		//Perform freeing if it was a write lock
+		if(filp_writable)
+		{
+			d->is_write_locked = 0;
+			writer_pid = -1;
+		}
+		//Otherwise perform freeing if it was a read lock
+		else
+		{
+			d->num_read_locks--;
+		}
+
+		//Unlock, then wake up the wait queue
+		osp_spin_unlock(&d->mutex);
+		wake_up_all(&d->blockq);
+		r = 0;
 
 	} else
 		r = -ENOTTY; /* unknown command */
