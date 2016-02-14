@@ -48,7 +48,7 @@ module_param(nsectors, int, 0);
 typedef struct reader_list
 {
     struct list_head list;
-    int ticket_num;
+    pid_t pid;
 } reader_list_t;
 
 /* The internal representation of our device. */
@@ -70,6 +70,7 @@ typedef struct osprd_info {
 
         unsigned num_read_locks;
         unsigned is_write_locked;
+        pid_t writer_pid;
         reader_list_t readers;
 
 	// The following elements are used internally; you don't need
@@ -274,6 +275,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 {
                     osp_spin_lock(&d->mutex);
                     d->is_write_locked = 1;
+                    d->writer_pid = current->pid;
                     osp_spin_unlock(&d->mutex);
                     filp->f_flags |= F_OSPRD_LOCKED;
                     r = 0;
@@ -287,12 +289,11 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                     }
                     else
                     {
-                        filp->f_flags = F_OSPRD_LOCKED;
-                        entry->ticket_num = local_ticket;
+                        filp->f_flags |= F_OSPRD_LOCKED;
+                        entry->pid = current->pid;
                         osp_spin_lock(&d->mutex);
                         list_add(&entry->list, &d->readers.list);
                         osp_spin_unlock(&d->mutex);
-                        //Read lock code goes here
                         r = 0;
                     }
                 }
