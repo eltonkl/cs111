@@ -141,12 +141,16 @@ static void osprd_process_request(osprd_info_t *d, struct request *req)
         if (rq_data_dir(req) == READ)
         {
             //eprintk("Reading %u sectors from sector %lu\n", req->current_nr_sectors, (unsigned long)req->sector);
+            osp_spin_lock(&d->mutex);
             memcpy(req->buffer, d->data + offset, nbytes);
+            osp_spin_unlock(&d->mutex);
         }
         else
         {
             //eprintk("Writing %u sectors to sector %lu\n", req->current_nr_sectors, (unsigned long)req->sector);
+            osp_spin_lock(&d->mutex);
             memcpy(d->data + offset, req->buffer, nbytes);
+            osp_spin_unlock(&d->mutex);
         }
 	end_request(req, 1);
 }
@@ -280,11 +284,16 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                     else
                     {
                         entry->ticket_num = local_ticket;
+                        osp_spin_lock(&d->mutex);
                         list_add(&entry->list, &d->readers.list);
+                        osp_spin_unlock(&d->mutex);
                         //Read lock code goes here
                         r = 0;
                     }
                 }
+                osp_spin_lock(&d->mutex);
+                d->ticket_head++;
+                osp_spin_unlock(&d->mutex);
                 //eprintk("Attempting to acquire\n");
 		//r = -ENOTTY;
 	} else if (cmd == OSPRDIOCTRYACQUIRE) {
