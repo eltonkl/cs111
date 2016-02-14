@@ -69,7 +69,7 @@ typedef struct osprd_info {
 					// the device lock
 
         unsigned num_read_locks;
-        unsigned num_write_locks;
+        unsigned is_write_locked;
         reader_list_t readers;
 
 	// The following elements are used internally; you don't need
@@ -248,10 +248,15 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 local_ticket = d->ticket_tail;
                 d->ticket_tail++;
                 osp_spin_unlock(&d->mutex);
-		res = wait_event_interruptible(d->blockq,
-                        local_ticket == d->ticket_head &&
-                        (d->num_write_locks == 0 || !filp_writable ||
-                        d->num_read_locks == 0));
+                if (filp_writable)
+		    res = wait_event_interruptible(d->blockq,
+                            local_ticket == d->ticket_head &&
+                            d->is_write_locked == 0 &&
+                            d->num_read_locks == 0);
+                else
+                    res = wait_event_interruptible(d->blockq,
+                            local_ticket == d->ticket_head &&
+                            d->is_write_locked == 0);
                 if (!res)
                 {
                     r = -1;
@@ -267,7 +272,10 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 //}
                 else if (filp_writable) //Write lock the ramdisk
                 {
-                    
+                    osp_spin_lock(&d->mutex);
+                    d->is_write_locked = 1;
+                    osp_spin_unlock(&d->mutex);
+                    filp->f_flags |= F_OSPRD_LOCKED;
                     r = 0;
                 }
                 else //Read lock the ramdisk
@@ -279,6 +287,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                     }
                     else
                     {
+                        filp->f_flags = F_OSPRD_LOCKED;
                         entry->ticket_num = local_ticket;
                         osp_spin_lock(&d->mutex);
                         list_add(&entry->list, &d->readers.list);
@@ -333,7 +342,7 @@ static void osprd_setup(osprd_info_t *d)
 	d->ticket_head = d->ticket_tail = 0;
 	/* Add code here if you add fields to osprd_info_t. */
         d->num_read_locks = 0;
-        d->num_write_locks = 0;
+        d->is_write_locked = 0;
         INIT_LIST_HEAD(&d->readers.list);
 }
 
