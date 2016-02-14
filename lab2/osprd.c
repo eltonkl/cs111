@@ -274,6 +274,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 else
                 {
                     int deadlocked;
+                    struct list_head *pos;
                     deadlocked = 0;
                     r = -EDEADLK;
                     osp_spin_lock(&d->mutex);
@@ -352,7 +353,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// Your code here (instead of the next line).
 		
 		//If the file hasn't locked the ramdisk, return -EINVAL
-		if(filp->f_flags & F_OSPRD_LOCKED == 0)
+		if((filp->f_flags & F_OSPRD_LOCKED) == 0)
 			r = -EINVAL;
 
 		//Lock to prepare for performing the free
@@ -362,7 +363,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		if(filp_writable)
 		{
 			d->is_write_locked = 0;
-			writer_pid = -1;
+			d->writer_pid = -1;
 		}
 		//Otherwise perform freeing if it was a read lock
 		else
