@@ -267,34 +267,37 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                     r = -ERESTARTSYS;
                 }
                 //detect deadlock
-                //else if (...)
-                //{
-                //  r = -EDEADLK;
-                //}
-                else if (filp_writable) //Write lock the ramdisk
+                else
                 {
-                    osp_spin_lock(&d->mutex);
-                    d->is_write_locked = 1;
-                    d->writer_pid = current->pid;
-                    osp_spin_unlock(&d->mutex);
-                    filp->f_flags |= F_OSPRD_LOCKED;
-                    r = 0;
-                }
-                else //Read lock the ramdisk
-                {
-                    struct reader_list* entry = kmalloc(sizeof(reader_list_t), 0);
-                    if (entry == NULL)
-                    {
-                        r = -ENOMEM;
-                    }
-                    else
-                    {
-                        filp->f_flags |= F_OSPRD_LOCKED;
-                        entry->pid = current->pid;
+                    int deadlocked;
+                    deadlocked = 0;
+                    r = -EDEADLK;
+
+                    if (!deadlocked) //Write lock the ramdisk
+                    { 
                         osp_spin_lock(&d->mutex);
-                        list_add(&entry->list, &d->readers.list);
+                        d->is_write_locked = 1;
+                        d->writer_pid = current->pid;
                         osp_spin_unlock(&d->mutex);
+                        filp->f_flags |= F_OSPRD_LOCKED;
                         r = 0;
+                    }
+                    else //Read lock the ramdisk
+                    {
+                        struct reader_list* entry = kmalloc(sizeof(reader_list_t), 0);
+                        if (entry == NULL)
+                        {
+                            r = -ENOMEM;
+                        }
+                        else
+                        {
+                            filp->f_flags |= F_OSPRD_LOCKED;
+                            entry->pid = current->pid;
+                            osp_spin_lock(&d->mutex);
+                            list_add(&entry->list, &d->readers.list);
+                            osp_spin_unlock(&d->mutex);
+                            r = 0;
+                        }
                     }
                 }
                 osp_spin_lock(&d->mutex);
