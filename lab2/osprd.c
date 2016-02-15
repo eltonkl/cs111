@@ -263,11 +263,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                     res = wait_event_interruptible(d->blockq,
                             local_ticket == d->ticket_head &&
                             d->is_write_locked == 0);
-                if (!res)
-                {
-                    r = -1;
-                }
-                else if (res == ERESTARTSYS)
+                if (res != 0)
                 {
                     r = -ERESTARTSYS;
                 }
