@@ -199,8 +199,12 @@ static int osprd_close_last(struct inode *inode, struct file *filp)
                     //Perform freeing if it was a write lock
                     if (filp_writable)
                     {
-                        d->is_write_locked = 0;
-                        d->writer_pid = -1;
+                        if (current->pid == d->writer_pid)
+                        {
+                            d->is_write_locked = 0;
+                            d->writer_pid = -1;
+                            filp->f_flags ^= F_OSPRD_LOCKED;
+                        }
                         //eprintk("close_last write\n");
                     }
                     //Otherwise perform freeing if it was a read lock
@@ -208,16 +212,20 @@ static int osprd_close_last(struct inode *inode, struct file *filp)
                     {
                         struct list_head *pos, *q;
                         reader_list_t* tmp;
-                        d->num_read_locks--;
+                        int removed = 0;
                         list_for_each_safe(pos, q, &d->readers.list) // Delete all read locks the process held
                         {
                             tmp = list_entry(pos, reader_list_t, list);
                             if (tmp->pid == current->pid)
                             {
+                                d->num_read_locks--;
                                 list_del(pos);
                                 kfree(tmp);
+                                removed = 1;
                             }
                         }
+                        if (removed)
+                            filp->f_flags ^= F_OSPRD_LOCKED;
                         //eprintk("close_last read\n");
                     }
                     osp_spin_unlock(&d->mutex);
@@ -465,7 +473,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// you need, and return 0.
 
 		// Your code here (instead of the next line).
-		
+
 		//If the file hasn't locked the ramdisk, return -EINVAL
 		if ((filp->f_flags & F_OSPRD_LOCKED) == 0)
 			return -EINVAL;
@@ -491,26 +499,37 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		//Otherwise perform freeing if it was a read lock
 		else
 		{
-                    struct list_head *pos;
+                    struct list_head *pos, *q;
                     reader_list_t* tmp;
                     int removed = 0;
+                    int more_read_locks = 0;
                     d->num_read_locks--;
-                    list_for_each(pos, &d->readers.list)
+                    list_for_each_safe(pos, q, &d->readers.list)
                     {
                         tmp = list_entry(pos, reader_list_t, list);
-                        if (tmp->pid == current->pid)
+                        if (!removed && tmp->pid == current->pid)
                         {
                             list_del(pos);
                             kfree(tmp);
-                            filp->f_flags ^= F_OSPRD_LOCKED;
                             removed = 1;
+                            continue;
+                        }
+                        if (removed && tmp->pid == current->pid)
+                        {
+                            more_read_locks = 1;
                             break;
                         }
                     }
+
                     if (!removed)
                     {
                         osp_spin_unlock(&d->mutex);
                         return -EINVAL;
+                    }
+                    else //if (removed)
+                    {
+                        if (!more_read_locks)
+                            filp->f_flags ^= F_OSPRD_LOCKED;
                     }
 		}
 

@@ -190,7 +190,7 @@ close FOO;
     ],
     # 22
     [
-      '(gcc tester.c -o tester && ./tester) & (sleep 1.0; rm -f tester)',
+      '(gcc tester.c -o tester && ./tester) & (sleep 5.0; rm -f tester)',
       "1"
     ],
     );
