@@ -51,6 +51,12 @@ typedef struct reader_list
     pid_t pid;
 } reader_list_t;
 
+typedef struct ticket_list
+{
+    struct list_head list;
+    int ticket_num;
+} ticket_list_t;
+
 /* The internal representation of our device. */
 typedef struct osprd_info {
 	uint8_t *data;                  // The data array. Its size is
@@ -77,6 +83,8 @@ typedef struct osprd_info {
                                         // PID of the write lock owner
 
         reader_list_t readers;          // Linked list of reader PIDs
+
+        ticket_list_t tickets;  // Linked list of valid tickets
 
 	// The following elements are used internally; you don't need
 	// to understand them.
@@ -186,20 +194,22 @@ static int osprd_close_last(struct inode *inode, struct file *filp)
 
                 if(filp->f_flags & F_OSPRD_LOCKED)
                 {
-		    osp_spin_lock(&d->mutex);
+                    osp_spin_lock(&d->mutex);
+                    //eprintk("close_last\n");
                     //Perform freeing if it was a write lock
-		    if(filp_writable)
-		    {
+                    if(filp_writable)
+                    {
                         d->is_write_locked = 0;
                         d->writer_pid = -1;
-		    }
-		    //Otherwise perform freeing if it was a read lock
-		    else
-		    {
+                        //eprintk("close_last write\n");
+                    }
+                    //Otherwise perform freeing if it was a read lock
+                    else
+                    {
                         struct list_head *pos, *q;
                         reader_list_t* tmp;
                         d->num_read_locks--;
-                        list_for_each_safe(pos, q, &d->readers.list)
+                        list_for_each_safe(pos, q, &d->readers.list) // Delete all read locks the process held
                         {
                             tmp = list_entry(pos, reader_list_t, list);
                             if (tmp->pid == current->pid)
@@ -208,13 +218,13 @@ static int osprd_close_last(struct inode *inode, struct file *filp)
                                 kfree(tmp);
                             }
                         }
-		    }
-		    osp_spin_unlock(&d->mutex);
+                        //eprintk("close_last read\n");
+                    }
+                    osp_spin_unlock(&d->mutex);
+                    wake_up_all(&d->blockq);
                 }
-                wake_up_all(&d->blockq);
-	}
-
-	return 0;
+        }
+        return 0;
 }
 
 
@@ -276,27 +286,37 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// be protected by a spinlock; which ones?)
 
                 // Why C90? :(
+                ticket_list_t* ticket = kmalloc(sizeof(ticket_list_t), 0);
+                struct list_head *pos;
+                ticket_list_t* tmp;
+                if (ticket == NULL)
+                    return -ENOMEM;
+
+                // Create ticket, and insert the ticket into the ticket queue
                 osp_spin_lock(&d->mutex);
                 local_ticket = d->ticket_tail;
                 d->ticket_tail++;
+                //eprintk("acquire local %d head %d tail %d\n", local_ticket, d->ticket_head, d->ticket_tail);
+                ticket->ticket_num = local_ticket;
+                list_add_tail(&ticket->list, &d->tickets.list);
                 osp_spin_unlock(&d->mutex);
-                if (filp_writable)
+
+                if (filp_writable) // If we are acquiring a write lock, wait until there are no readers or writers
 		    res = wait_event_interruptible(d->blockq,
                             local_ticket == d->ticket_head &&
                             d->is_write_locked == 0 &&
                             d->num_read_locks == 0);
-                else
+                else // If we are acquiring a read lock, wait until there are no writers
                     res = wait_event_interruptible(d->blockq,
                             local_ticket == d->ticket_head &&
                             d->is_write_locked == 0);
-                if (res != 0)
+                if (res != 0) //Interrupted by signal!
                 {
                     r = -ERESTARTSYS;
                     osp_spin_lock(&d->mutex);
-                    d->ticket_head++;
-                    osp_spin_unlock(&d->mutex);
+                    //eprintk("interrupt local %d head %d tail %d\n", local_ticket, d->ticket_head, d->ticket_tail);
                 }
-                else
+                else //Continue like normal (no interruption)
                 {
                     int deadlocked;
                     struct list_head *pos;
@@ -334,24 +354,42 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                     else if (!deadlocked && !filp_writable) //Read lock the ramdisk
                     {
                         reader_list_t* entry = kmalloc(sizeof(reader_list_t), 0);
-                        if (entry == NULL)
+                        if (entry == NULL) // malloc failed, do not increment the number of read locks
                         {
                             r = -ENOMEM;
                         }
-                        else
+                        else // malloc succeeded, increment number of read locks
                         {
                             filp->f_flags |= F_OSPRD_LOCKED;
                             entry->pid = current->pid;
-                            list_add(&entry->list, &d->readers.list);
+                            list_add_tail(&entry->list, &d->readers.list);
                             d->num_read_locks++;
                             r = 0;
                         }
                     }
-                    d->ticket_head++;
-                    osp_spin_unlock(&d->mutex);
+                    //eprintk("success local %d head %d tail %d\n", local_ticket, d->ticket_head, d->ticket_tail);
                 }
-                //eprintk("Attempting to acquire\n");
-		//r = -ENOTTY;
+                // Delete ticket from ticket queue
+                list_for_each(pos, &d->tickets.list)
+                {
+                    tmp = list_entry(pos, ticket_list_t, list);
+                    if (tmp->ticket_num == local_ticket)
+                    {
+                        list_del(pos);
+                        kfree(tmp);
+                        //eprintk("Deleted ticket %d from list\n", local_ticket);
+                        break;
+                    }
+                }
+                if (list_empty(&d->tickets.list)) // No tickets in queue, set head to tail
+                    d->ticket_head = d->ticket_tail;
+                else // Serve the next ticket in the queue
+                {
+                    ticket_list_t* first = list_entry(d->tickets.list.next, ticket_list_t, list);
+                    d->ticket_head = first->ticket_num;
+                }
+                //eprintk("New ticket num: %d\n", d->ticket_head);
+                osp_spin_unlock(&d->mutex);
 	} else if (cmd == OSPRDIOCTRYACQUIRE) {
 
 		// EXERCISE: ATTEMPT to lock the ramdisk.
@@ -399,7 +437,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                             else
                             {
                                 entry->pid = current->pid;
-                                list_add(&entry->list, &d->readers.list);
+                                list_add_tail(&entry->list, &d->readers.list);
                                 d->num_read_locks++;
                             }
                     }
@@ -438,10 +476,10 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		//Otherwise perform freeing if it was a read lock
 		else
 		{
-                    struct list_head *pos, *q;
+                    struct list_head *pos;
                     reader_list_t* tmp;
                     d->num_read_locks--;
-                    list_for_each_safe(pos, q, &d->readers.list)
+                    list_for_each(pos, &d->readers.list)
                     {
                         tmp = list_entry(pos, reader_list_t, list);
                         if (tmp->pid == current->pid)
@@ -458,7 +496,6 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		osp_spin_unlock(&d->mutex);
 		wake_up_all(&d->blockq);
 		r = 0;
-
 	} else
 		r = -ENOTTY; /* unknown command */
 	return r;
@@ -477,6 +514,7 @@ static void osprd_setup(osprd_info_t *d)
         d->num_read_locks = 0;
         d->is_write_locked = 0;
         INIT_LIST_HEAD(&d->readers.list);
+        INIT_LIST_HEAD(&d->tickets.list);
 }
 
 
