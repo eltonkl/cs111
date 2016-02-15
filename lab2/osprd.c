@@ -359,11 +359,54 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// This is just like OSPRDIOCACQUIRE, except it should never
 		// block.  If OSPRDIOCACQUIRE would block or return deadlock,
 		// OSPRDIOCTRYACQUIRE should return -EBUSY.
-		// Otherwise, if we can grant the lock request, return 0.
+		// Otherwise, if we can grant the lock request, return 0
 
-		// Your code here (instead of the next two lines).
-		eprintk("Attempting to try acquire\n");
-		r = -ENOTTY;
+                if(filp->writable)
+                {
+                        //Check to make sure there aren't read locks and there isn't already a write lock
+                        if(d->num_read_locks > 0 || d->is_write_locked == 1)
+                        {
+                                return -EBUSY;
+                        }
+                        else
+                        {
+                                osp_spin_lock(&d->mutex);
+                                d->is_write_locked = 1;
+                                d->writer_pid = current->pid;
+                        }
+                }
+                else
+                {
+                        //Check to make sure there's no write lock
+                        if(d->is_write_locked == 1)
+                        {
+                                return -EBUSY;
+                        }
+                        else
+                        {
+                                osp_spin_lock(&d->mutex);
+                                reader_list_t* entry = kmalloc(sizeof(reader_list_t), 0);
+                                if (entry == NULL)
+                                {
+                                        return -ENOMEM;
+                                }
+                                else
+                                {
+                                        filp->f_flags |= F_OSPRD_LOCKED;
+                                        entry->pid = current->pid;
+                                        list_add(&entry->list, &d->readers.list);
+                                        d->num_read_locks++;
+                                        r = 0;
+                                }
+                        }
+                }
+                
+                //If we make it this far, then we have a lock
+                d->ticket_head++;
+                d->ticket_tail++;
+                filp->f_flags |= F_OSPRD_LOCKED;
+                osp_spin_unlock(&d->mutex);
+                r = 0;
 
 	} else if (cmd == OSPRDIOCRELEASE) {
 
