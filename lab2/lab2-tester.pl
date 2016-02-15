@@ -167,10 +167,26 @@ close FOO;
       "aX"
     ],
 
-    # 18
+    # 18, write lock after write lock
     [
       'echo foo | ./osprdaccess -w -l /dev/osprda /dev/osprda',
       "ioctl OSPRDIOCACQUIRE: Resource deadlock avoided"
+    ],
+    # 19, read lock after write lock
+    [
+      'echo foo | ./osprdaccess -w -l /dev/osprda -r -l /dev/osprda',
+      "ioctl OSPRDIOCACQUIRE: Resource deadlock avoided"
+    ],
+    # 20, write lock after read lock
+    [
+      'echo foo | ./osprdaccess -r -l /dev/osprda -w -l /dev/osprda',
+      "ioctl OSPRDIOCACQUIRE: Resource deadlock avoided"
+    ],
+    # 21, read lock after read lock (both locks should acquire)
+    [
+      '(echo foo | ./osprdaccess -w -l /dev/osprda) && ' .
+      '(./osprdaccess -r 3 -l /dev/osprda -r 3 -l /dev/osprda)',
+      "foo"
     ],
     );
 

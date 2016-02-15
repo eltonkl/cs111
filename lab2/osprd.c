@@ -289,13 +289,33 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 ticket_list_t* ticket;
                 struct list_head *pos;
                 ticket_list_t* tmp;
-                if (filp_writable && d->is_write_locked && d->writer_pid == current->pid) // Check if owner of write lock is attempting to acquire a write lock
-                    return -EDEADLK;
+
                 ticket = kmalloc(sizeof(ticket_list_t), 0);
                 if (ticket == NULL)
                     return -ENOMEM;
-                // Create ticket, and insert the ticket into the ticket queue
+
                 osp_spin_lock(&d->mutex);
+                if (d->is_write_locked && d->writer_pid == current->pid) // Check if owner of write lock is attempting to acquire another lock
+                {
+                    osp_spin_unlock(&d->mutex);
+                    return -EDEADLK;
+                }
+                if (filp_writable) //Check if owner of read lock is attempting to acquire a write lock
+                {
+                    list_for_each(pos, &d->readers.list)
+                    {
+                        reader_list_t* cur;
+                        cur = list_entry(pos, reader_list_t, list);
+                        {
+                            if (cur->pid == current->pid)
+                            {
+                                osp_spin_unlock(&d->mutex);
+                                return -EDEADLK;
+                            }
+                        }
+                    }
+                }
+                // Create ticket, and insert the ticket into the ticket queue
                 local_ticket = d->ticket_tail;
                 d->ticket_tail++;
                 eprintk("acquire %d local %d head %d tail %d\n", filp_writable, local_ticket, d->ticket_head, d->ticket_tail);
@@ -320,40 +340,15 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 }
                 else //Continue like normal (no interruption)
                 {
-                    int deadlocked;
-                    struct list_head *pos;
-                    deadlocked = 0;
-                    r = -EDEADLK;
                     osp_spin_lock(&d->mutex);
-                    list_for_each(pos, &d->readers.list)
-                    {
-                        reader_list_t* cur;
-                        cur = list_entry(pos, reader_list_t, list);
-                        if (filp_writable) //Check if owner of read lock is attempting to acquire a write lock
-                        {
-                            if (cur->pid == current->pid)
-                            {
-                                deadlocked = 1;
-                                break;
-                            }
-                        }
-                        else //Check if owner of write lock is attempting to acquire a read lock
-                        {
-                            if (d->is_write_locked && d->writer_pid == cur->pid)
-                            {
-                                deadlocked = 1;
-                                break;
-                            }
-                        }
-                    }
-                    if (!deadlocked && filp_writable) //Write lock the ramdisk
+                    if (filp_writable) //Write lock the ramdisk
                     { 
                         d->is_write_locked = 1;
                         d->writer_pid = current->pid;
                         filp->f_flags |= F_OSPRD_LOCKED;
                         r = 0;
                     }
-                    else if (!deadlocked && !filp_writable) //Read lock the ramdisk
+                    else //if (!filp_writable) //Read lock the ramdisk
                     {
                         reader_list_t* entry = kmalloc(sizeof(reader_list_t), 0);
                         if (entry == NULL) // malloc failed, do not increment the number of read locks
@@ -464,7 +459,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		
 		//If the file hasn't locked the ramdisk, return -EINVAL
 		if((filp->f_flags & F_OSPRD_LOCKED) == 0)
-			r = -EINVAL;
+			return -EINVAL;
 
 		//Lock to prepare for performing the free
 		osp_spin_lock(&d->mutex);
@@ -472,14 +467,25 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		//Perform freeing if it was a write lock
 		if(filp_writable)
 		{
-                    d->is_write_locked = 0;
-                    d->writer_pid = -1;
+                    if (current->pid == d->writer_pid)
+                    {
+                        d->is_write_locked = 0;
+                        d->writer_pid = -1;
+                        filp->f_flags ^= F_OSPRD_LOCKED;
+                    }
+                    else
+                    {
+                        osp_spin_unlock(&d->mutex);
+                        return -EINVAL;
+                    }
 		}
 		//Otherwise perform freeing if it was a read lock
 		else
 		{
                     struct list_head *pos;
                     reader_list_t* tmp;
+                    int removed;
+                    removed = 0;
                     d->num_read_locks--;
                     list_for_each(pos, &d->readers.list)
                     {
@@ -488,13 +494,19 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                         {
                             list_del(pos);
                             kfree(tmp);
+                            filp->f_flags ^= F_OSPRD_LOCKED;
+                            removed = 1;
                             break;
                         }
+                    }
+                    if (!removed)
+                    {
+                        osp_spin_unlock(&d->mutex);
+                        return -EINVAL;
                     }
 		}
 
 		//Unlock, then wake up the wait queue
-                filp->f_flags ^= F_OSPRD_LOCKED;
 		osp_spin_unlock(&d->mutex);
 		wake_up_all(&d->blockq);
 		r = 0;
