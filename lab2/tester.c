@@ -44,7 +44,7 @@ int main()
     if (ioctl(devfd2, OSPRDIOCTRYACQUIRE, NULL) != -1)
     {
         success = 0;
-        perror("Successfully try-acquired a write lock with preexisting read locks 2 and 3");
+        printf("Successfully try-acquired a write lock with preexisting read locks 2 and 3");
         goto end;
     }
     if (ioctl(devfd, OSPRDIOCRELEASE, NULL) == -1)
@@ -68,14 +68,28 @@ int main()
     if (ioctl(devfd, OSPRDIOCTRYACQUIRE, NULL) != -1)
     {
         success = 0;
-        perror("Successfully try-acquired a read lock with preexisting write lock 1");
+        printf("Successfully try-acquired a read lock with preexisting write lock 1");
         goto end;
     }
     close(devfd2);
     if (ioctl(devfd, OSPRDIOCACQUIRE, NULL) == -1)
     {
         success = 0;
-        perror("Failed to acquire a read lock after closing write fd to ramdisk");
+        perror("Failed to acquire read lock 4 after closing write fd to ramdisk");
+        goto end;
+    }
+    if (ioctl(devfd, OSPRDIOCACQUIRE, NULL) == -1)
+    {
+        success = 0;
+        perror("Failed to acquire read lock 5");
+        goto end;
+    }
+    close(devfd);
+    devfd = open(devname, O_RDONLY);
+    if (ioctl(devfd, OSPRDIOCRELEASE, NULL) != -1)
+    {
+        success = 0;
+        printf("Successfully closed a lock when no locks should be available");
         goto end;
     }
     close(devfd);
