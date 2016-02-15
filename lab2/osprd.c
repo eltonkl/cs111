@@ -192,12 +192,12 @@ static int osprd_close_last(struct inode *inode, struct file *filp)
 
 		// Your code here.
 
-                if(filp->f_flags & F_OSPRD_LOCKED)
+                if (filp->f_flags & F_OSPRD_LOCKED)
                 {
                     osp_spin_lock(&d->mutex);
                     //eprintk("close_last\n");
                     //Perform freeing if it was a write lock
-                    if(filp_writable)
+                    if (filp_writable)
                     {
                         d->is_write_locked = 0;
                         d->writer_pid = -1;
@@ -467,14 +467,14 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// Your code here (instead of the next line).
 		
 		//If the file hasn't locked the ramdisk, return -EINVAL
-		if((filp->f_flags & F_OSPRD_LOCKED) == 0)
+		if ((filp->f_flags & F_OSPRD_LOCKED) == 0)
 			return -EINVAL;
 
 		//Lock to prepare for performing the free
 		osp_spin_lock(&d->mutex);
 
 		//Perform freeing if it was a write lock
-		if(filp_writable)
+		if (filp_writable)
 		{
                     if (current->pid == d->writer_pid)
                     {
