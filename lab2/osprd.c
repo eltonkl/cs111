@@ -289,7 +289,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 ticket_list_t* ticket;
                 struct list_head *pos;
                 ticket_list_t* tmp;
-                if (filp_writable && d->is_write_locked) // Check if owner of write lock is attempting to acquire a write lock
+                if (filp_writable && d->is_write_locked && d->writer_pid == current->pid) // Check if owner of write lock is attempting to acquire a write lock
                     return -EDEADLK;
                 ticket = kmalloc(sizeof(ticket_list_t), 0);
                 if (ticket == NULL)
