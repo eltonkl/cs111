@@ -360,45 +360,49 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// block.  If OSPRDIOCACQUIRE would block or return deadlock,
 		// OSPRDIOCTRYACQUIRE should return -EBUSY.
 		// Otherwise, if we can grant the lock request, return 0
-
-                if(filp->writable)
+                osp_spin_lock(&d->mutex);
+                if (d->ticket_head != d->ticket_tail)
+                {
+                    osp_spin_unlock(&d->mutex);
+                    return -EBUSY;
+                }
+                if (filp_writable)
                 {
                         //Check to make sure there aren't read locks and there isn't already a write lock
-                        if(d->num_read_locks > 0 || d->is_write_locked == 1)
+                        if (d->num_read_locks > 0 || d->is_write_locked == 1)
                         {
-                                return -EBUSY;
+                            osp_spin_unlock(&d->mutex);
+                            return -EBUSY;
                         }
                         else
                         {
-                                osp_spin_lock(&d->mutex);
-                                d->is_write_locked = 1;
-                                d->writer_pid = current->pid;
+                            d->is_write_locked = 1;
+                            d->writer_pid = current->pid;
                         }
                 }
                 else
                 {
                         //Check to make sure there's no write lock
-                        if(d->is_write_locked == 1)
+                        if (d->is_write_locked == 1)
                         {
-                                return -EBUSY;
+                            osp_spin_unlock(&d->mutex);
+                            return -EBUSY;
                         }
                         else
                         {
-                                osp_spin_lock(&d->mutex);
-                                reader_list_t* entry = kmalloc(sizeof(reader_list_t), 0);
-                                if (entry == NULL)
-                                {
-                                        return -ENOMEM;
-                                }
-                                else
-                                {
-                                        filp->f_flags |= F_OSPRD_LOCKED;
-                                        entry->pid = current->pid;
-                                        list_add(&entry->list, &d->readers.list);
-                                        d->num_read_locks++;
-                                        r = 0;
-                                }
-                        }
+                            reader_list_t* entry = kmalloc(sizeof(reader_list_t), 0);
+                            if (entry == NULL)
+                            {
+                                osp_spin_unlock(&d->mutex);
+                                return -ENOMEM;
+                            }
+                            else
+                            {
+                                entry->pid = current->pid;
+                                list_add(&entry->list, &d->readers.list);
+                                d->num_read_locks++;
+                            }
+                    }
                 }
                 
                 //If we make it this far, then we have a lock
@@ -407,7 +411,6 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 filp->f_flags |= F_OSPRD_LOCKED;
                 osp_spin_unlock(&d->mutex);
                 r = 0;
-
 	} else if (cmd == OSPRDIOCRELEASE) {
 
 		// EXERCISE: Unlock the ramdisk.
