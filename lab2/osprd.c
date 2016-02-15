@@ -195,7 +195,7 @@ static int osprd_close_last(struct inode *inode, struct file *filp)
                 if(filp->f_flags & F_OSPRD_LOCKED)
                 {
                     osp_spin_lock(&d->mutex);
-                    //eprintk("close_last\n");
+                    eprintk("close_last\n");
                     //Perform freeing if it was a write lock
                     if(filp_writable)
                     {
@@ -296,7 +296,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 osp_spin_lock(&d->mutex);
                 local_ticket = d->ticket_tail;
                 d->ticket_tail++;
-                //eprintk("acquire local %d head %d tail %d\n", local_ticket, d->ticket_head, d->ticket_tail);
+                eprintk("acquire local %d head %d tail %d\n", local_ticket, d->ticket_head, d->ticket_tail);
                 ticket->ticket_num = local_ticket;
                 list_add_tail(&ticket->list, &d->tickets.list);
                 osp_spin_unlock(&d->mutex);
@@ -314,7 +314,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 {
                     r = -ERESTARTSYS;
                     osp_spin_lock(&d->mutex);
-                    //eprintk("interrupt local %d head %d tail %d\n", local_ticket, d->ticket_head, d->ticket_tail);
+                    eprintk("interrupt local %d head %d tail %d\n", local_ticket, d->ticket_head, d->ticket_tail);
                 }
                 else //Continue like normal (no interruption)
                 {
@@ -367,7 +367,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                             r = 0;
                         }
                     }
-                    //eprintk("success local %d head %d tail %d\n", local_ticket, d->ticket_head, d->ticket_tail);
+                    eprintk("success local %d head %d tail %d\n", local_ticket, d->ticket_head, d->ticket_tail);
                 }
                 // Delete ticket from ticket queue
                 list_for_each(pos, &d->tickets.list)
@@ -377,7 +377,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                     {
                         list_del(pos);
                         kfree(tmp);
-                        //eprintk("Deleted ticket %d from list\n", local_ticket);
+                        eprintk("Deleted ticket %d from list\n", local_ticket);
                         break;
                     }
                 }
@@ -388,7 +388,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                     ticket_list_t* first = list_entry(d->tickets.list.next, ticket_list_t, list);
                     d->ticket_head = first->ticket_num;
                 }
-                //eprintk("New ticket num: %d\n", d->ticket_head);
+                eprintk("New ticket num: %d\n", d->ticket_head);
                 osp_spin_unlock(&d->mutex);
 	} else if (cmd == OSPRDIOCTRYACQUIRE) {
 
