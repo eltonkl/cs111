@@ -296,7 +296,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 osp_spin_lock(&d->mutex);
                 local_ticket = d->ticket_tail;
                 d->ticket_tail++;
-                eprintk("acquire local %d head %d tail %d\n", local_ticket, d->ticket_head, d->ticket_tail);
+                eprintk("acquire %d local %d head %d tail %d\n", filp_writable, local_ticket, d->ticket_head, d->ticket_tail);
                 ticket->ticket_num = local_ticket;
                 list_add_tail(&ticket->list, &d->tickets.list);
                 osp_spin_unlock(&d->mutex);
