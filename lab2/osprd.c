@@ -368,19 +368,19 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		//Otherwise perform freeing if it was a read lock
 		else
 		{
-			d->num_read_locks--;
-			struct list_head *tmp, *pos, *q;
-			list_for_each_safe(pos, q, &d->readers.list)
-			{
-				tmp = list_entry(pos, reader_list_t, list);
-				if (tmp->pid == current->pid)
-                                {
-				    list_del(tmp);
-				    kfree(tmp);
-                                    break;
-                                }
-			}
-
+                    struct list_head *pos, *q;
+                    reader_list* tmp;
+                    d->num_read_locks--;
+                    list_for_each_safe(pos, q, &d->readers.list)
+                    {
+                        tmp = list_entry(pos, reader_list_t, list);
+                        if (tmp->pid == current->pid)
+                        {
+                            list_del(tmp);
+                            kfree(tmp);
+                            break;
+                        }
+                    }
 		}
 
 		//Unlock, then wake up the wait queue
