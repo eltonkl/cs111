@@ -286,12 +286,14 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// be protected by a spinlock; which ones?)
 
                 // Why C90? :(
-                ticket_list_t* ticket = kmalloc(sizeof(ticket_list_t), 0);
+                ticket_list_t* ticket;
                 struct list_head *pos;
                 ticket_list_t* tmp;
+                if (filp_writable && d->is_write_locked) // Check if owner of write lock is attempting to acquire a write lock
+                    return -EDEADLK;
+                ticket = kmalloc(sizeof(ticket_list_t), 0);
                 if (ticket == NULL)
                     return -ENOMEM;
-
                 // Create ticket, and insert the ticket into the ticket queue
                 osp_spin_lock(&d->mutex);
                 local_ticket = d->ticket_tail;
