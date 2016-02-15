@@ -184,9 +184,34 @@ static int osprd_close_last(struct inode *inode, struct file *filp)
 
 		// Your code here.
 
-		// This line avoids compiler warnings; you may remove it.
-		(void) filp_writable, (void) d;
-
+                if(filp->f_flags & F_OSPRD_LOCKED)
+                {
+		    osp_spin_lock(&d->mutex);
+                    //Perform freeing if it was a write lock
+		    if(filp_writable)
+		    {
+                        d->is_write_locked = 0;
+                        d->writer_pid = -1;
+		    }
+		    //Otherwise perform freeing if it was a read lock
+		    else
+		    {
+                        struct list_head *pos, *q;
+                        reader_list_t* tmp;
+                        d->num_read_locks--;
+                        list_for_each_safe(pos, q, &d->readers.list)
+                        {
+                            tmp = list_entry(pos, reader_list_t, list);
+                            if (tmp->pid == current->pid)
+                            {
+                                list_del(pos);
+                                kfree(tmp);
+                            }
+                        }
+		    }
+		    osp_spin_unlock(&d->mutex);
+                }
+                wake_up_all(&d->blockq);
 	}
 
 	return 0;
@@ -250,6 +275,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// (Some of these operations are in a critical section and must
 		// be protected by a spinlock; which ones?)
 
+                // Why C90? :(
                 osp_spin_lock(&d->mutex);
                 local_ticket = d->ticket_tail;
                 d->ticket_tail++;
