@@ -188,6 +188,11 @@ close FOO;
       '(./osprdaccess -r 3 -l /dev/osprda -r 3 -l /dev/osprda)',
       "foo"
     ],
+    # 22
+    [
+      '(gcc tester.c -o tester && ./tester) & (sleep 1.0; rm -f tester)',
+      "1"
+    ],
     );
 
 my($ntest) = 0;
