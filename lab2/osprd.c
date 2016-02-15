@@ -266,6 +266,9 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 if (res != 0)
                 {
                     r = -ERESTARTSYS;
+                    osp_spin_lock(&d->mutex);
+                    d->ticket_head++;
+                    osp_spin_unlock(&d->mutex);
                 }
                 else
                 {
@@ -302,7 +305,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                         filp->f_flags |= F_OSPRD_LOCKED;
                         r = 0;
                     }
-                    else if (!deadlocked) //Read lock the ramdisk
+                    else if (!deadlocked && !filp_writable) //Read lock the ramdisk
                     {
                         reader_list_t* entry = kmalloc(sizeof(reader_list_t), 0);
                         if (entry == NULL)
@@ -318,11 +321,9 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                             r = 0;
                         }
                     }
+                    d->ticket_head++;
                     osp_spin_unlock(&d->mutex);
                 }
-                osp_spin_lock(&d->mutex);
-                d->ticket_head++;
-                osp_spin_unlock(&d->mutex);
                 //eprintk("Attempting to acquire\n");
 		//r = -ENOTTY;
 	} else if (cmd == OSPRDIOCTRYACQUIRE) {
@@ -359,8 +360,8 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		//Perform freeing if it was a write lock
 		if(filp_writable)
 		{
-			d->is_write_locked = 0;
-			d->writer_pid = -1;
+                    d->is_write_locked = 0;
+                    d->writer_pid = -1;
 		}
 		//Otherwise perform freeing if it was a read lock
 		else
