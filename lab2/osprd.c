@@ -302,7 +302,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                         filp->f_flags |= F_OSPRD_LOCKED;
                         r = 0;
                     }
-                    else //Read lock the ramdisk
+                    else if (!deadlocked) //Read lock the ramdisk
                     {
                         reader_list_t* entry = kmalloc(sizeof(reader_list_t), 0);
                         if (entry == NULL)
@@ -314,6 +314,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                             filp->f_flags |= F_OSPRD_LOCKED;
                             entry->pid = current->pid;
                             list_add(&entry->list, &d->readers.list);
+                            d->num_read_locks++;
                             r = 0;
                         }
                     }
@@ -380,6 +381,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		}
 
 		//Unlock, then wake up the wait queue
+                filp->f_flags ^= F_OSPRD_LOCKED;
 		osp_spin_unlock(&d->mutex);
 		wake_up_all(&d->blockq);
 		r = 0;
