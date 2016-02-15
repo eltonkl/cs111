@@ -308,7 +308,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                     }
                     else //Read lock the ramdisk
                     {
-                        struct reader_list* entry = kmalloc(sizeof(reader_list_t), 0);
+                        reader_list_t* entry = kmalloc(sizeof(reader_list_t), 0);
                         if (entry == NULL)
                         {
                             r = -ENOMEM;
@@ -369,14 +369,14 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		else
 		{
                     struct list_head *pos, *q;
-                    reader_list* tmp;
+                    reader_list_t* tmp;
                     d->num_read_locks--;
                     list_for_each_safe(pos, q, &d->readers.list)
                     {
                         tmp = list_entry(pos, reader_list_t, list);
                         if (tmp->pid == current->pid)
                         {
-                            list_del(tmp);
+                            list_del(pos);
                             kfree(tmp);
                             break;
                         }
