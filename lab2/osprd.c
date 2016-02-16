@@ -256,7 +256,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 	// Set 'r' to the ioctl's return value: 0 on success, negative on error
 
         ticket_list_t* ticket = NULL;
-        reader_list_t* entry = NULL;
+        reader_list_t* reader = NULL;
         if (cmd == OSPRDIOCACQUIRE) {
 
 		// EXERCISE: Lock the ramdisk.
@@ -306,8 +306,8 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 
                 if (!filp_writable)
                 {
-                    entry = kmalloc(sizeof(reader_list_t), GFP_ATOMIC);
-                    if (entry == NULL) // malloc failed, do not increment the number of read locks
+                    reader = kmalloc(sizeof(reader_list_t), GFP_ATOMIC);
+                    if (reader == NULL) // malloc failed, do not increment the number of read locks
                     {
                         r = -ENOMEM;
                         goto fail;
@@ -357,29 +357,33 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 if (res != 0) //Interrupted by signal!
                 {
                     r = -ERESTARTSYS;
-                    if (entry)
-                        kfree(entry);
+                    if (reader)
+                        kfree(reader);
                     osp_spin_lock(&d->mutex);
                     //eprintk("interrupt local %d head %d tail %d\n", local_ticket, d->ticket_head, d->ticket_tail);
                 }
                 else //Continue like normal (no interruption)
                 {
+                    filp->f_flags |= F_OSPRD_LOCKED;
+                    r = 0;
+                    if (filp_writable)
+                    {
+                        if (reader)
+                            kfree(reader);
+                    }
+                    else
+                        reader->pid = current->pid;
                     osp_spin_lock(&d->mutex);
                     if (filp_writable) //Write lock the ramdisk
                     { 
                         d->is_write_locked = 1;
                         d->writer_pid = current->pid;
-                        filp->f_flags |= F_OSPRD_LOCKED;
-                        r = 0;
                     }
                     else //if (!filp_writable) //Read lock the ramdisk
                     {
                         //increment number of read locks
-                        filp->f_flags |= F_OSPRD_LOCKED;
-                        entry->pid = current->pid;
-                        list_add_tail(&entry->list, &d->readers.list);
+                        list_add_tail(&reader->list, &d->readers.list);
                         d->num_read_locks++;
-                        r = 0;
                     }
                     //eprintk("success local %d head %d tail %d\n", local_ticket, d->ticket_head, d->ticket_tail);
                 }
@@ -543,8 +547,8 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 fail:
         if (ticket)
             kfree(ticket);
-        if (entry)
-            kfree(entry);
+        if (reader)
+            kfree(reader);
         return r;
 }
 
