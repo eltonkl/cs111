@@ -300,13 +300,13 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 struct list_head *pos;
                 ticket_list_t* tmp;
 
-                ticket = kmalloc(sizeof(ticket_list_t), 0);
+                ticket = kmalloc(sizeof(ticket_list_t), GFP_ATOMIC);
                 if (ticket == NULL)
                     return -ENOMEM;
 
                 if (!filp_writable)
                 {
-                    entry = kmalloc(sizeof(reader_list_t), 0);
+                    entry = kmalloc(sizeof(reader_list_t), GFP_ATOMIC);
                     if (entry == NULL) // malloc failed, do not increment the number of read locks
                     {
                         r = -ENOMEM;
@@ -442,7 +442,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                         }
                         else
                         {
-                            reader_list_t* entry = kmalloc(sizeof(reader_list_t), 0);
+                            reader_list_t* entry = kmalloc(sizeof(reader_list_t), GFP_ATOMIC);
                             if (entry == NULL)
                             {
                                 osp_spin_unlock(&d->mutex);
