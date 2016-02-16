@@ -358,8 +358,6 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 if (res != 0) //Interrupted by signal!
                 {
                     r = -ERESTARTSYS;
-                    if (reader)
-                        kfree(reader);
                     osp_spin_lock(&d->mutex);
                     //eprintk("interrupt local %d head %d tail %d\n", local_ticket, d->ticket_head, d->ticket_tail);
                 }
@@ -367,12 +365,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 {
                     filp->f_flags |= F_OSPRD_LOCKED;
                     r = 0;
-                    if (filp_writable)
-                    {
-                        if (reader)
-                            kfree(reader);
-                    }
-                    else
+                    if (!filp_writable)
                         reader->pid = current->pid;
                     osp_spin_lock(&d->mutex);
                     if (filp_writable) //Write lock the ramdisk
@@ -382,8 +375,8 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                     }
                     else //if (!filp_writable) //Read lock the ramdisk
                     {
-                        //increment number of read locks
                         list_add_tail(&reader->list, &d->readers.list);
+                        //increment number of read locks
                         d->num_read_locks++;
                     }
                     //eprintk("success local %d head %d tail %d\n", local_ticket, d->ticket_head, d->ticket_tail);
@@ -410,6 +403,14 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 }
                 //eprintk("New ticket num: %d\n", d->ticket_head);
                 osp_spin_unlock(&d->mutex);
+                if (res != 0)
+                {
+                    if (!filp_writable)
+                    {
+                        if (reader)
+                            kfree(reader);
+                    }
+                }
                 if (!queue_empty)
                     wake_up_all(&d->blockq);
 	} else if (cmd == OSPRDIOCTRYACQUIRE) {
