@@ -299,6 +299,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 int local_ticket;
                 struct list_head *pos;
                 ticket_list_t* tmp;
+                int queue_empty;
 
                 ticket = kmalloc(sizeof(ticket_list_t), GFP_ATOMIC);
                 if (ticket == NULL)
@@ -399,7 +400,8 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                         break;
                     }
                 }
-                if (list_empty(&d->tickets.list)) // No tickets in queue, set head to tail
+                queue_empty = list_empty(&d->tickets.list);
+                if (queue_empty) // No tickets in queue, set head to tail
                     d->ticket_head = d->ticket_tail;
                 else // Serve the next ticket in the queue
                 {
@@ -408,6 +410,8 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 }
                 //eprintk("New ticket num: %d\n", d->ticket_head);
                 osp_spin_unlock(&d->mutex);
+                if (!queue_empty)
+                    wake_up_all(&d->blockq);
 	} else if (cmd == OSPRDIOCTRYACQUIRE) {
 
 		// EXERCISE: ATTEMPT to lock the ramdisk.
