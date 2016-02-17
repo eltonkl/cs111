@@ -301,9 +301,13 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 ticket_list_t* tmp;
                 int queue_empty;
 
+                osp_spin_lock(&d->mutex);
                 ticket = kmalloc(sizeof(ticket_list_t), GFP_ATOMIC);
                 if (ticket == NULL)
+                {
+                    osp_spin_unlock(&d->mutex);
                     return -ENOMEM;
+                }
 
                 if (!filp_writable)
                 {
@@ -311,15 +315,15 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                     if (reader == NULL) // malloc failed, do not increment the number of read locks
                     {
                         r = -ENOMEM;
+                        osp_spin_unlock(&d->mutex);
                         goto fail;
                     }
                 }
 
-                osp_spin_lock(&d->mutex);
                 if (d->is_write_locked && d->writer_pid == current->pid) // Check if owner of write lock is attempting to acquire another lock
                 {
-                    osp_spin_unlock(&d->mutex);
                     r = -EDEADLK;
+                    osp_spin_unlock(&d->mutex);
                     goto fail;
                 }
                 if (filp_writable) //Check if owner of read lock is attempting to acquire a write lock
