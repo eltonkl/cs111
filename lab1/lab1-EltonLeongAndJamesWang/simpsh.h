@@ -9,8 +9,6 @@
 
 #define SIMPSH_MAX(a,b) ((a > b) ? a : b) 
 
-extern jmp_buf          simpsh_context;
-extern int              simpsh_last_signal;
 extern int              simpsh_max_status;
 extern bool             simpsh_print_verbose;
 extern bool             simpsh_profile_perf;

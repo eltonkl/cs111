@@ -331,7 +331,7 @@ SIMPSH_HANDLER(profile)
 SIMPSH_HANDLER(abort)
 {
     (void)opt;
-    *(volatile int *)NULL = 0;
+    raise(SIGSEGV);
 }
 
 static void catch_handler(int signo)
@@ -362,8 +362,7 @@ SIMPSH_HANDLER(catch)
 
 static void ignore_handler(int signo)
 {
-    simpsh_last_signal = signo;
-    longjmp(simpsh_context, 1);
+    (void)signo;
 }
 
 SIMPSH_HANDLER(ignore)
