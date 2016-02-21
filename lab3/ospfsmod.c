@@ -453,6 +453,7 @@ ospfs_dir_readdir(struct file *filp, void *dirent, filldir_t filldir)
 		 *
 		 * EXERCISE: Your code here */
 
+                int type;
                 if ((f_pos - 2) * OSPFS_DIRENTRY_SIZE >= dir_oi->oi_size)
                 {
                     r = 1;
@@ -488,7 +489,6 @@ ospfs_dir_readdir(struct file *filp, void *dirent, filldir_t filldir)
                     continue;
                 }
                 entry_oi = ospfs_inode(od->od_ino);
-                int type;
                 switch (entry_oi->oi_ftype)
                 {
                     case OSPFS_FTYPE_SYMLINK:
@@ -497,6 +497,8 @@ ospfs_dir_readdir(struct file *filp, void *dirent, filldir_t filldir)
                         type = DT_DIR; break;
                     case OSPFS_FTYPE_REG:
                         type = DT_REG; break;
+                    default: // Hopefully this never happens
+                        type = DT_REG;
                 }
                 ok_so_far = filldir(dirent, od->od_name, strlen(od->od_name), f_pos, od->od_ino, type);
                 if (ok_so_far >= 0)
@@ -744,23 +746,24 @@ add_block(ospfs_inode_t *oi)
 	/* EXERCISE: Your code here */
         uint32_t new_nblocks = n + 1;
         int32_t offset;
-
+        uint32_t new_block;
         if (new_nblocks > OSPFS_MAXFILEBLKS)
             return -ENOSPC;
 
-        uint32_t new_block = allocate_block();
+        new_block = allocate_block();
         if (new_block == 0)
             return -ENOSPC;
 
         // Modify the doubly indirect block
         if (!indir2_index(new_nblocks))
         {
-            offset = indir_index(new_nblocks);
             int32_t indir_offset;
-            uint32_t* indirect_block
+            uint32_t* indirect_block;
             uint32_t* indirect2_block = NULL;
             uint32_t indirect_blockno = 0;
             uint32_t indirect2_blockno = 0;
+
+            offset = indir_index(new_nblocks);
             // Need to allocate a doubly indirect block
             if (offset == 0)
             {
@@ -1165,7 +1168,7 @@ create_blank_direntry(ospfs_inode_t *dir_oi)
 	//    entries and return one of them.
 
 	/* EXERCISE: Your code here. */
-        uint32_t offset;
+        uint32_t offset, new_size;
         ospfs_direntry_t* od;
         for (offset = 0; offset < dir_oi->oi_size; offset += OSPFS_DIRENTRY_SIZE)
         {
@@ -1173,7 +1176,7 @@ create_blank_direntry(ospfs_inode_t *dir_oi)
             if (od->od_ino == 0)
                 return od;
         }
-        unit32_t new_size = (ospfs_size2nblocks(dir_oi->oi_size) + 1) * OSPFS_BLKSIZE;
+        new_size = (ospfs_size2nblocks(dir_oi->oi_size) + 1) * OSPFS_BLKSIZE;
         if (change_size(dir_oi, new_size) < 0)
             return ERR_PTR(-ENOSPC);
         return ospfs_inode_data(dir_oi, offset);
@@ -1228,7 +1231,7 @@ ospfs_link(struct dentry *src_dentry, struct inode *dir, struct dentry *dst_dent
         oi->oi_nlink++;
 
         dst_dentry->d_inode->i_ino = src_dentry->d_inode->i_ino;
-        odentry->od_ino = oi->od_ino;
+        odentry->od_ino = src_dentry->d_inode->i_ino;
 
         strncpy(odentry->od_name, dst_dentry->d_name.name, dst_dentry->d_name.len);
         odentry->od_name[dst_dentry->d_name.len] = '\0';
