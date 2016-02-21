@@ -678,7 +678,7 @@ indir_index(uint32_t b)
         else if (b >= OSPFS_NDIRECT && b < (OSPFS_NDIRECT + OSPFS_NINDIRECT))
             return 0;
         else
-            return b - (OSPFS_NDIRECT + OSPFS_NINDIRECT);
+            return (b - (OSPFS_NDIRECT + OSPFS_NINDIRECT)) / OSPFS_NINDIRECT;
 }
 
 
@@ -697,8 +697,10 @@ direct_index(uint32_t b)
 	// Your code here.
 	if (b < OSPFS_NDIRECT)
             return b;
-        else
+        else if (b >= OSPFS_NDIRECT && b < (OSPFS_NDIRECT + OSPFS_NINDIRECT))
             return b - OSPFS_NDIRECT;
+        else
+            return (b - (OSPFS_NDIRECT + OSPFS_NINDIRECT)) % OSPFS_NINDIRECT;
 }
 
 
@@ -739,11 +741,112 @@ add_block(ospfs_inode_t *oi)
 	// current number of blocks in file
 	uint32_t n = ospfs_size2nblocks(oi->oi_size);
 
-	// keep track of allocations to free in case of -ENOSPC
-	uint32_t *allocated[2] = { 0, 0 };
-
 	/* EXERCISE: Your code here */
-	return -EIO; // Replace this line
+        uint32_t new_nblocks = n + 1;
+        int32_t offset;
+
+        if (new_nblocks > OSPFS_MAXFILEBLKS)
+            return -ENOSPC;
+
+        uint32_t new_block = allocate_block();
+        if (new_block == 0)
+            return -ENOSPC;
+
+        // Modify the doubly indirect block
+        if (!indir2_index(new_nblocks))
+        {
+            offset = indir_index(new_nblocks);
+            int32_t indir_offset;
+            uint32_t* indirect_block
+            uint32_t* indirect2_block = NULL;
+            uint32_t indirect_blockno = 0;
+            uint32_t indirect2_blockno = 0;
+            // Need to allocate a doubly indirect block
+            if (offset == 0)
+            {
+                indirect2_blockno = allocate_block();
+                if (indirect2_blockno == 0)
+                    goto fail;
+                indirect2_block = ospfs_block(indirect2_blockno);
+            }
+            else
+                indirect2_block = ospfs_block(oi->oi_indirect2);
+            // Need to allocate an indirect block
+            // Condition one: If we allocate a doubly indirect block, we have to allocate an indirect block too
+            // Condition two: Preexisting doubly indirect block that needs an indirect block to be allocated
+            if (indirect2_blockno != 0 || (indirect2_blockno == 0 && indirect2_block[offset] == 0))
+            {
+                indirect_blockno = allocate_block();
+                if (indirect_blockno == 0)
+                {
+                    if (indirect2_blockno != 0)
+                        free_block(indirect2_blockno);
+                    goto fail;
+                }
+            }
+
+            // We created this indirect block, so we need to zero it out
+            if (indirect_blockno != 0)
+            {
+                indirect_block = ospfs_block(indirect_blockno);
+                memset(indirect_block, 0, OSPFS_BLKSIZE);
+            }
+            // Preexisting indirect block
+            else
+            {
+                indirect_blockno = indirect2_block[offset];
+                indirect_block = ospfs_block(indirect_blockno);
+            }
+
+            // Zero out doubly indirect block if we created it
+            if (indirect2_blockno != 0)
+            {
+                memset(indirect2_block, 0, OSPFS_BLKSIZE);
+                oi->oi_indirect2 = indirect2_blockno;
+            }
+            // If the doubly indirect block does not have a pointer to the indirect block, define the pointer
+            if (indirect2_block[offset] == 0)
+                indirect2_block[offset] = indirect_blockno;
+
+            indir_offset = direct_index(new_nblocks);
+            indirect_block[indir_offset] = new_block;
+        }
+        //Modify the indirect block
+        else if (!indir_index(new_nblocks))
+        {
+	    uint32_t* indirect_block;
+            uint32_t indirect_blockno = 0;
+
+            offset = direct_index(new_nblocks);
+            // Need to allocate an indirect block
+            if (offset == 0)
+            {
+                indirect_blockno = allocate_block();
+                if (indirect_blockno == 0)
+                    goto fail;
+                oi->oi_indirect = indirect_blockno;
+                indirect_block = ospfs_block(indirect_blockno);
+            }
+
+            // Zero out newly created indirect block
+            if (indirect_blockno != 0)
+                memset(indirect_block, 0, OSPFS_BLKSIZE);
+            else
+                indirect_block = ospfs_block(oi->oi_indirect);
+            indirect_block[offset] = new_block;
+        }
+        //Modify the direct block
+        else
+        {
+            offset = direct_index(new_nblocks);
+            oi->oi_direct[offset] = new_block;
+        }
+        memset(ospfs_block(new_block), 0, OSPFS_BLKSIZE);
+        oi->oi_size = new_nblocks * OSPFS_BLKSIZE;
+	return 0;
+fail:
+        free_block(new_block);
+        return -ENOSPC;
 }
 
 
