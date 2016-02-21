@@ -582,7 +582,18 @@ ospfs_unlink(struct inode *dirino, struct dentry *dentry)
 static uint32_t
 allocate_block(void)
 {
-	/* EXERCISE: Your code here */
+        uint32_t bno; // Block number
+        void* bm = ospfs_block(OSPFS_FREEMAP_BLK); // Bitmap
+        // Iterate through each individual bit of the bitmap and return the
+        // first one found
+        for (bno = OSPFS_FREEMAP_BLK + 1; bno < ospfs_super->os_nblocks; bno++)
+        {
+            if (bitvector_test(bm, bno))
+            {
+                bitvector_clear(bm, bno);
+                return bno;
+            }
+        }
 	return 0;
 }
 
@@ -601,7 +612,10 @@ allocate_block(void)
 static void
 free_block(uint32_t blockno)
 {
-	/* EXERCISE: Your code here */
+        void* bm = ospfs_block(OSPFS_FREEMAP_BLK);
+        if (blockno < 3)
+            return;
+        bitvector_set(bm, blockno);
 }
 
 
@@ -1038,7 +1052,18 @@ create_blank_direntry(ospfs_inode_t *dir_oi)
 	//    entries and return one of them.
 
 	/* EXERCISE: Your code here. */
-	return ERR_PTR(-EINVAL); // Replace this line
+        uint32_t offset;
+        ospfs_direntry_t* od;
+        for (offset = 0; offset < dir_oi->oi_size; offset += OSPFS_DIRENTRY_SIZE)
+        {
+            od = ospfs_inode_data(dir_oi, offset);
+            if (od->od_ino == 0)
+                return od;
+        }
+        unit32_t new_size = (ospfs_size2nblocks(dir_oi->oi_size) + 1) * OSPFS_BLKSIZE;
+        if (change_size(dir_oi, new_size) < 0)
+            return ERR_PTR(-ENOSPC);
+        return ospfs_inode_data(dir_oi, offset);
 }
 
 // ospfs_link(src_dentry, dir, dst_dentry
@@ -1111,6 +1136,16 @@ ospfs_create(struct inode *dir, struct dentry *dentry, int mode, struct nameidat
 	ospfs_inode_t *dir_oi = ospfs_inode(dir->i_ino);
 	uint32_t entry_ino = 0;
 	/* EXERCISE: Your code here. */
+        uint32_t ino;
+        ospfs_inode_t* oi;
+        for (ino = 2; ino < ospfs_super->os_ninodes; ino++)
+        {
+            oi = ospfs_inode(ino);
+            if (oi->oi_nlink == 0)
+            {
+                return ino;
+            }
+        }
 	return -EINVAL; // Replace this line
 
 	/* Execute this code after your function has successfully created the
