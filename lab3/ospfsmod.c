@@ -652,7 +652,9 @@ static int32_t
 indir2_index(uint32_t b)
 {
 	// Your code here.
-	return -1;
+	if (b >= (OSPFS_NDIRECT + OSPFS_NINDIRECT))
+            return 0;
+        return -1;
 }
 
 
@@ -671,7 +673,12 @@ static int32_t
 indir_index(uint32_t b)
 {
 	// Your code here.
-	return -1;
+        if (b < OSPFS_NDIRECT)
+            return -1;
+        else if (b >= OSPFS_NDIRECT && b < (OSPFS_NDIRECT + OSPFS_NINDIRECT))
+            return 0;
+        else
+            return b - (OSPFS_NDIRECT + OSPFS_NINDIRECT);
 }
 
 
@@ -688,7 +695,10 @@ static int32_t
 direct_index(uint32_t b)
 {
 	// Your code here.
-	return -1;
+	if (b < OSPFS_NDIRECT)
+            return b;
+        else
+            return b - OSPFS_NDIRECT;
 }
 
 
@@ -1098,7 +1108,28 @@ create_blank_direntry(ospfs_inode_t *dir_oi)
 static int
 ospfs_link(struct dentry *src_dentry, struct inode *dir, struct dentry *dst_dentry) {
 	/* EXERCISE: Your code here. */
-	return -EINVAL;
+        ospfs_inode_t* dir_oi = ospfs_inode(dir->i_ino);
+        ospfs_inode_t* oi = ospfs_inode(src_dentry->d_inode->i_ino);
+        ospfs_direntry_t* odentry;
+
+        if (dst_dentry->d_name.len > OSPFS_MAXNAMELEN)
+            return -ENAMETOOLONG;
+
+        if (find_direntry(dir_oi, dst_dentry->d_name.name, dst_dentry->d_name.len) != NULL)
+            return -EEXIST;
+
+        odentry = create_blank_direntry(dir_oi);
+        if (IS_ERR(odentry))
+            return PTR_ERR(odentry);
+
+        oi->oi_nlink++;
+
+        dst_dentry->d_inode->i_ino = src_dentry->d_inode->i_ino;
+        odentry->od_ino = oi->od_ino;
+
+        strncpy(odentry->od_name, dst_dentry->d_name.name, dst_dentry->d_name.len);
+        odentry->od_name[dst_dentry->d_name.len] = '\0';
+        return 0;
 }
 
 // ospfs_create
