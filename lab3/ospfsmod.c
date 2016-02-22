@@ -1397,6 +1397,8 @@ ospfs_create(struct inode *dir, struct dentry *dentry, int mode, struct nameidat
 
                 oi->oi_mode = mode;
                 oi->oi_nlink++;
+                oi->oi_size = 0;
+                oi->oi_ftype = OSPFS_FTYPE_REG;
 
                 new_dentry->od_ino = entry_ino;
                 memcpy(new_dentry->od_name, dentry->d_name.name, dentry->d_name.len);
