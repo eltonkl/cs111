@@ -1173,7 +1173,7 @@ ospfs_write(struct file *filp, const char __user *buffer, size_t count, loff_t *
 	// use struct file's f_flags field and the O_APPEND bit.
 	/* EXERCISE: Your code here */
 
-        if ((filp->f_flags & O_APPEND) == 1)
+        if ((filp->f_flags & O_APPEND) == O_APPEND)
             *f_pos = oi->oi_size;
 
 	// If the user is writing past the end of the file, change the file's
