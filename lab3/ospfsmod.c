@@ -1420,7 +1420,7 @@ ospfs_create(struct inode *dir, struct dentry *dentry, int mode, struct nameidat
                 new_dentry->od_ino = entry_ino;
                 memcpy(new_dentry->od_name, dentry->d_name.name, dentry->d_name.len);
                 new_dentry->od_name[dentry->d_name.len] = '\0';
-                return entry_ino;
+                break;
             }
         }
         if (entry_ino == ospfs_super->os_ninodes)
@@ -1571,6 +1571,6 @@ module_init(init_ospfs_fs)
 module_exit(exit_ospfs_fs)
 
 // Information about the module
-MODULE_AUTHOR("Skeletor");
+MODULE_AUTHOR("Elton Leong and James Wang");
 MODULE_DESCRIPTION("OSPFS");
 MODULE_LICENSE("GPL");
