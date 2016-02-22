@@ -744,12 +744,12 @@ static int
 add_block(ospfs_inode_t *oi)
 {
 	// current number of blocks in file
-	uint32_t n = ospfs_size2nblocks(oi->oi_size);
+	uint32_t new_block_index = ospfs_size2nblocks(oi->oi_size);
 
 	/* EXERCISE: Your code here */
         int32_t offset;
         uint32_t new_block;
-        if (n + 1 > OSPFS_MAXFILEBLKS)
+        if (new_block_index + 1 > OSPFS_MAXFILEBLKS)
             return -ENOSPC;
 
         new_block = allocate_block();
@@ -757,7 +757,7 @@ add_block(ospfs_inode_t *oi)
             return -ENOSPC;
 
         // Modify the doubly indirect block
-        if (!indir2_index(n))
+        if (!indir2_index(new_block_index))
         {
             int32_t indir_offset;
             uint32_t* indirect_block;
@@ -765,7 +765,7 @@ add_block(ospfs_inode_t *oi)
             uint32_t indirect_blockno = 0;
             uint32_t indirect2_blockno = 0;
 
-            offset = indir_index(n);
+            offset = indir_index(new_block_index);
             // Need to allocate a doubly indirect block
             if (offset == 0)
             {
@@ -814,16 +814,16 @@ add_block(ospfs_inode_t *oi)
             if (indirect2_block[offset] == 0)
                 indirect2_block[offset] = indirect_blockno;
 
-            indir_offset = direct_index(n);
+            indir_offset = direct_index(new_block_index);
             indirect_block[indir_offset] = new_block;
         }
         //Modify the indirect block
-        else if (!indir_index(n))
+        else if (!indir_index(new_block_index))
         {
 	    uint32_t* indirect_block;
             uint32_t indirect_blockno = 0;
 
-            offset = direct_index(n);
+            offset = direct_index(new_block_index);
             // Need to allocate an indirect block
             if (offset == 0)
             {
@@ -844,12 +844,12 @@ add_block(ospfs_inode_t *oi)
         //Modify the direct block
         else
         {
-            offset = direct_index(n);
+            offset = direct_index(new_block_index);
             oi->oi_direct[offset] = new_block;
         }
 
         memset(ospfs_block(new_block), 0, OSPFS_BLKSIZE);
-        oi->oi_size = (n + 1) * OSPFS_BLKSIZE;
+        oi->oi_size = (new_block_index + 1) * OSPFS_BLKSIZE;
 	return 0;
 fail:
         free_block(new_block);
@@ -886,7 +886,7 @@ remove_block(ospfs_inode_t *oi)
 	uint32_t n = ospfs_size2nblocks(oi->oi_size);
 
 	/* EXERCISE: Your code here */
-        uint32_t new_nblocks = n - 1;
+        uint32_t last_block_index = n - 1;
         int32_t offset;
         uint32_t data_blockno;
 
@@ -894,11 +894,11 @@ remove_block(ospfs_inode_t *oi)
         if (n == 0)
             return 0;
         // Delete from the greatest numbered indirect block in the doubly indirect block
-        else if (!indir2_index(n))
+        else if (!indir2_index(last_block_index))
         {
             uint32_t* indirect2_block, * indirect_block;
             uint32_t indirect_blockno, indirect_offset;
-            offset = indir_index(new_nblocks);
+            offset = indir_index(last_block_index);
 
             if (oi->oi_indirect2 == 0)
                 return -EIO;
@@ -909,7 +909,7 @@ remove_block(ospfs_inode_t *oi)
             indirect_blockno = indirect2_block[offset];
 
             indirect_block = ospfs_block(indirect_blockno);
-            indirect_offset = direct_index(new_nblocks);
+            indirect_offset = direct_index(last_block_index);
             if (indirect_block[indirect_offset] == 0)
                 return -EIO;
 
@@ -930,10 +930,10 @@ remove_block(ospfs_inode_t *oi)
             }
         }
         // Remove a data block from the indirect block
-        else if (!indir_index(n))
+        else if (!indir_index(last_block_index))
         {
             uint32_t* indirect_block;
-            offset = direct_index(new_nblocks);
+            offset = direct_index(last_block_index);
 
             if (oi->oi_indirect == 0)
                 return -EIO;
@@ -954,7 +954,7 @@ remove_block(ospfs_inode_t *oi)
         // Remove a data block from the direct block list
         else
         {
-            offset = direct_index(new_nblocks);
+            offset = direct_index(last_block_index);
 
             if (oi->oi_direct[offset] == 0)
                 return -EIO;
@@ -963,7 +963,7 @@ remove_block(ospfs_inode_t *oi)
             oi->oi_direct[offset] = 0;
         }
         free_block(data_blockno);
-        oi->oi_size = new_nblocks * OSPFS_BLKSIZE;
+        oi->oi_size = last_block_index * OSPFS_BLKSIZE;
         return 0;
 }
 
