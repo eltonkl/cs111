@@ -553,6 +553,9 @@ ospfs_unlink(struct inode *dirino, struct dentry *dentry)
 
 	od->od_ino = 0;
 	oi->oi_nlink--;
+
+        if (oi->oi_ftype == OSPFS_FTYPE_REG && oi->oi_nlink == 0)
+            change_size(oi, 0);
 	return 0;
 }
 
@@ -882,7 +885,26 @@ remove_block(ospfs_inode_t *oi)
 	uint32_t n = ospfs_size2nblocks(oi->oi_size);
 
 	/* EXERCISE: Your code here */
-	return -EIO; // Replace this line
+        uint32_t new_nblocks = n - 1;
+        int32_t offset;
+
+        // Modify the doubly indirect block
+        if (!indir2_index(new_nblocks))
+        {
+            offset = indir_index(new_nblocks);
+        }
+        //Modify the indirect block
+        else if (!indir_index(new_nblocks))
+        {
+            offset = direct_index(new_nblocks);
+        }
+        //Modify the direct block
+        else
+        {
+            offset = direct_index(new_nblocks);
+        }
+        oi->oi_size = new_nblocks * OSPFS_BLKSIZE;
+        return 0;
 }
 
 
@@ -929,17 +951,31 @@ change_size(ospfs_inode_t *oi, uint32_t new_size)
 	int r = 0;
 
 	while (ospfs_size2nblocks(oi->oi_size) < ospfs_size2nblocks(new_size)) {
-	        /* EXERCISE: Your code here */
-		return -EIO; // Replace this line
+                int ret = add_block(oi);
+                eprintk("adding block\n");
+                if (ret == -ENOSPC)
+                {
+                    new_size = old_size;
+                    r = -ENOSPC;
+                    break;
+                }
 	}
 	while (ospfs_size2nblocks(oi->oi_size) > ospfs_size2nblocks(new_size)) {
-	        /* EXERCISE: Your code here */
-		return -EIO; // Replace this line
-	}
+                int ret = remove_block(oi);
+                if (ret == -EIO)
+                {
+                    r = -EIO;
+                    break;
+                }
+        }
 
 	/* EXERCISE: Make sure you update necessary file meta data
 	             and return the proper value. */
-	return -EIO; // Replace this line
+        if (r == 0)
+            oi->oi_size = new_size;
+        else
+            oi->oi_size = old_size;
+        return r;
 }
 
 
@@ -1001,15 +1037,19 @@ ospfs_read(struct file *filp, char __user *buffer, size_t count, loff_t *f_pos)
 	ospfs_inode_t *oi = ospfs_inode(filp->f_dentry->d_inode->i_ino);
 	int retval = 0;
 	size_t amount = 0;
-
 	// Make sure we don't read past the end of the file!
 	// Change 'count' so we never read past the end of the file.
 	/* EXERCISE: Your code here */
-
+        if (count > oi->oi_size)
+            count = oi->oi_size;
+        if (*f_pos >= oi->oi_size)
+            goto done;
 	// Copy the data to user block by block
 	while (amount < count && retval >= 0) {
 		uint32_t blockno = ospfs_inode_blockno(oi, *f_pos);
-		uint32_t n;
+                uint32_t remain = count - amount;
+                uint32_t offset = *f_pos % OSPFS_BLKSIZE;
+                uint32_t n = OSPFS_BLKSIZE - offset;
 		char *data;
 
 		// ospfs_inode_blockno returns 0 on error
@@ -1019,14 +1059,18 @@ ospfs_read(struct file *filp, char __user *buffer, size_t count, loff_t *f_pos)
 		}
 
 		data = ospfs_block(blockno);
-
 		// Figure out how much data is left in this block to read.
 		// Copy data into user space. Return -EFAULT if unable to write
 		// into user space.
 		// Use variable 'n' to track number of bytes moved.
 		/* EXERCISE: Your code here */
-		retval = -EIO; // Replace these lines
-		goto done;
+                if (n > remain)
+                    n = remain;
+                if (copy_to_user(buffer, data + offset, n) != 0)
+                {
+                    retval = -EFAULT;
+                    goto done;
+                }
 
 		buffer += n;
 		amount += n;
@@ -1217,7 +1261,6 @@ ospfs_link(struct dentry *src_dentry, struct inode *dir, struct dentry *dst_dent
         ospfs_inode_t* dir_oi = ospfs_inode(dir->i_ino);
         ospfs_inode_t* oi = ospfs_inode(src_dentry->d_inode->i_ino);
         ospfs_direntry_t* odentry;
-
         if (dst_dentry->d_name.len > OSPFS_MAXNAMELEN)
             return -ENAMETOOLONG;
 
@@ -1230,10 +1273,9 @@ ospfs_link(struct dentry *src_dentry, struct inode *dir, struct dentry *dst_dent
 
         oi->oi_nlink++;
 
-        dst_dentry->d_inode->i_ino = src_dentry->d_inode->i_ino;
         odentry->od_ino = src_dentry->d_inode->i_ino;
 
-        strncpy(odentry->od_name, dst_dentry->d_name.name, dst_dentry->d_name.len);
+        memcpy(odentry->od_name, dst_dentry->d_name.name, dst_dentry->d_name.len);
         odentry->od_name[dst_dentry->d_name.len] = '\0';
         return 0;
 }
@@ -1272,18 +1314,35 @@ ospfs_create(struct inode *dir, struct dentry *dentry, int mode, struct nameidat
 {
 	ospfs_inode_t *dir_oi = ospfs_inode(dir->i_ino);
 	uint32_t entry_ino = 0;
-	/* EXERCISE: Your code here. */
-        uint32_t ino;
         ospfs_inode_t* oi;
-        for (ino = 2; ino < ospfs_super->os_ninodes; ino++)
+	/* EXERCISE: Your code here. */
+        if (dentry->d_name.len > OSPFS_MAXNAMELEN)
+            return -ENAMETOOLONG;
+
+        if (find_direntry(dir_oi, dentry->d_name.name, dentry->d_name.len) != NULL)
+            return -EEXIST;
+
+        for (entry_ino = 2; entry_ino < ospfs_super->os_ninodes; entry_ino++)
         {
-            oi = ospfs_inode(ino);
+            oi = ospfs_inode(entry_ino);
             if (oi->oi_nlink == 0)
             {
-                return ino;
+                ospfs_direntry_t* new_dentry;
+                new_dentry = create_blank_direntry(dir_oi);
+                if (IS_ERR(new_dentry))
+                    return PTR_ERR(new_dentry);
+
+                oi->oi_mode = mode;
+                oi->oi_nlink++;
+
+                new_dentry->od_ino = entry_ino;
+                memcpy(new_dentry->od_name, dentry->d_name.name, dentry->d_name.len);
+                new_dentry->od_name[dentry->d_name.len] = '\0';
+                return entry_ino;
             }
         }
-	return -EINVAL; // Replace this line
+        if (entry_ino == ospfs_super->os_ninodes)
+            return -ENOSPC;
 
 	/* Execute this code after your function has successfully created the
 	   file.  Set entry_ino to the created file's inode number before
