@@ -767,7 +767,7 @@ add_block(ospfs_inode_t *oi)
 
             offset = indir_index(new_block_index);
             // Need to allocate a doubly indirect block
-            if (offset == 0)
+            if (new_block_index == (OSPFS_NDIRECT + OSPFS_NINDIRECT))
             {
                 indirect2_blockno = allocate_block();
                 if (indirect2_blockno == 0)
@@ -813,7 +813,6 @@ add_block(ospfs_inode_t *oi)
             // If the doubly indirect block does not have a pointer to the indirect block, define the pointer
             if (indirect2_block[offset] == 0)
                 indirect2_block[offset] = indirect_blockno;
-
             indir_offset = direct_index(new_block_index);
             indirect_block[indir_offset] = new_block;
         }
