@@ -554,7 +554,8 @@ ospfs_unlink(struct inode *dirino, struct dentry *dentry)
 	od->od_ino = 0;
 	oi->oi_nlink--;
 
-        if (oi->oi_ftype == OSPFS_FTYPE_REG && oi->oi_nlink == 0)
+        // Deallocate blocks if we are deleting a directory or file
+        if (oi->oi_nlink == 0 && oi->oi_ftype != OSPFS_FTYPE_SYMLINK)
             change_size(oi, 0);
 	return 0;
 }
@@ -1479,15 +1480,25 @@ ospfs_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
             oi = ospfs_inode(entry_ino);
             if (oi->oi_nlink == 0)
             {
+                ospfs_symlink_inode_t* sym_oi = (ospfs_symlink_inode_t*)oi;
                 ospfs_direntry_t* new_dentry;
                 new_dentry = create_blank_direntry(dir_oi);
                 if (IS_ERR(new_dentry))
                     return PTR_ERR(new_dentry);
 
-                oi->oi_nlink++;
-                oi->oi_size = strlen(symname);
-                oi->oi_ftype = OSPFS_FTYPE_SYMLINK;
-                strcpy(((ospfs_symlink_inode_t*)oi)->oi_symlink, symname);
+                sym_oi->oi_nlink++;
+                sym_oi->oi_size = strlen(symname);
+                sym_oi->oi_ftype = OSPFS_FTYPE_SYMLINK;
+                strcpy(sym_oi->oi_symlink, symname);
+
+                if (strncmp(sym_oi->oi_symlink, "root?", 5) == 0)
+                {
+                    char* end = strchr(sym_oi->oi_symlink, ':');
+                    // If there is a ':' and it's not the last char in the symname,
+                    // we have a conditional link
+                    if (end != NULL && *(end + 1) != '\0')
+                        *end = '\0';
+                }
 
                 new_dentry->od_ino = entry_ino;
                 memcpy(new_dentry->od_name, dentry->d_name.name, dentry->d_name.len);
@@ -1530,8 +1541,26 @@ ospfs_follow_link(struct dentry *dentry, struct nameidata *nd)
 	ospfs_symlink_inode_t *oi =
 		(ospfs_symlink_inode_t *) ospfs_inode(dentry->d_inode->i_ino);
 	// Exercise: Your code here.
-
-	nd_set_link(nd, oi->oi_symlink);
+        if (strncmp(oi->oi_symlink, "root?", 5) == 0)
+        {
+            char* name;
+            char* first_null = strchr(oi->oi_symlink, '\0');
+            // This would be a rare case: a file starting with root? that is not
+            // a conditional symlink
+            if ((first_null - oi->oi_symlink) == oi->oi_size)
+                name = oi->oi_symlink;
+            // Actual conditional symlink
+            else
+            {
+                if (current->uid == 0)
+                    name = oi->oi_symlink + 5;
+                else
+                    name = first_null + 1;
+            }
+            nd_set_link(nd, name);
+        }
+        else
+	    nd_set_link(nd, oi->oi_symlink);
 	return (void *) 0;
 }
 
