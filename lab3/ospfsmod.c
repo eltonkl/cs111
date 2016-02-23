@@ -554,7 +554,7 @@ ospfs_unlink(struct inode *dirino, struct dentry *dentry)
         // Or if it is the last direntry, just zero it out
         else
         {
-            ospfs_direntry_t* last_od;
+            ospfs_direntry_t* last_od = NULL;
             int last_off;
             for (last_off = dir_oi->oi_size - OSPFS_DIRENTRY_SIZE; last_off > entry_off; last_off -= OSPFS_DIRENTRY_SIZE)
             {
