@@ -550,9 +550,32 @@ ospfs_unlink(struct inode *dirino, struct dentry *dentry)
 		printk("<1>ospfs_unlink should not fail!\n");
 		return -ENOENT;
 	}
-
-	od->od_ino = 0;
-	oi->oi_nlink--;
+        // Move the last direntry to the spot of the direntry we are deleting
+        // Or if it is the last direntry, just zero it out
+        else
+        {
+            ospfs_direntry_t* last_od;
+            int last_off;
+            for (last_off = dir_oi->oi_size - OSPFS_DIRENTRY_SIZE; last_off > entry_off; last_off -= OSPFS_DIRENTRY_SIZE)
+            {
+                last_od = ospfs_inode_data(dir_oi, last_off);
+                if (last_od->od_ino != 0)
+                    break;
+            }
+            if (last_off != entry_off)
+            {
+                od->od_ino = last_od->od_ino;
+                strcpy(od->od_name, last_od->od_name);
+                last_od->od_ino = 0;
+            }
+            else
+                od->od_ino = 0;
+            // If the last direntry is the last direntry in a block, we can
+            // free up the next block that was reserved for the direntries
+            if (last_off % OSPFS_BLKSIZE == OSPFS_BLKSIZE - OSPFS_DIRENTRY_SIZE)
+                change_size(dir_oi, ospfs_size2nblocks(last_off + OSPFS_DIRENTRY_SIZE) * OSPFS_BLKSIZE);
+        }
+        oi->oi_nlink--;
 
         // Deallocate blocks if we are deleting a directory or file
         if (oi->oi_nlink == 0 && oi->oi_ftype != OSPFS_FTYPE_SYMLINK)
