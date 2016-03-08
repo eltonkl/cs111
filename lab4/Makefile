@@ -3,7 +3,7 @@ OPTIMIZE =
 DEBUG = -g
 CC = gcc
 CFLAGS = $(OPTIMIZE) $(DEBUG) -Wall -Wextra -march=native -mtune=native -std=gnu11
-LDFLAGS = -lpthread
+LDFLAGS = -pthread
 
 default: addtest sltest
 
