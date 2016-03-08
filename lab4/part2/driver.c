@@ -63,11 +63,26 @@ int main(int argc, char** argv)
             }
             case 4: // Option "sync"
             {
-                
+                char* result;
+                if (strchr(optarg, 'm') && strchr(optarg, 's'))
+                {
+                    fprintf(stderr, "Option \'--sync\' failed: argument must contain one of [ms], not both\n");
+                    exit(1);
+                }
+                else if ((result = strchr(optarg, 'm')) || (result = strchr(optarg, 's')))
+                {
+                }
+                else
+                {
+                    fprintf(stderr, "Option \'--sync\' failed: argument does not contain one of [ms]\n");
+                    exit(1);
+                }
+
                 break;
             }
             case 5: // Option "lists"
             {
+                int result = get_arg_as_number_or_exit(long_options[long_options_offset - c].name, optarg);
                 break;
             }
             default:
