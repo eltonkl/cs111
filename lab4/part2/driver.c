@@ -41,6 +41,9 @@ bool check_inserts = false;
 bool check_deletes = false;
 bool check_lookups = false;
 int opt_yield = 0;
+SortedList_t sl;
+
+void* process(void*);
 
 int main(int argc, char** argv)
 {
@@ -135,7 +138,6 @@ int main(int argc, char** argv)
     if (check_lookups)
         opt_yield |= SEARCH_YIELD;
 
-    SortedList_t sl;
     sl.next = &sl;
     sl.prev = &sl;
     sl.key = NULL;
@@ -167,5 +169,48 @@ int main(int argc, char** argv)
         elements[i].key = result;
     }
 
-    
+    struct timespec start_time, end_time;
+    if (clock_gettime(CLOCK_MONOTONIC, &start_time) != 0)
+    {
+        fprintf(stderr, "clock_gettime failed\n");
+        exit(1);
+    }
+
+    pthread_t* tids = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
+    if (tids == NULL)
+    {
+        fprintf(stderr, "error allocating memory");
+        exit(1);
+    }
+
+    for (int i = 0; i < num_threads; i++)
+    {
+        int result = pthread_create(&tids[i], NULL, process, (void *)&elements[i * num_iterations]);
+        if (result == 1)
+        {
+            fprintf(stderr, "error creating thread");
+            exit(1);
+        }
+    }
+
+    for (int i = 0; i < num_threads; i++)
+    {
+        void* result;
+        if (pthread_join(tids[i], &result) == 1)
+        {
+            fprintf(stderr, "error joining thread");
+            return 1;
+        }
+        if (result == NULL)
+            exit(1);
+    }
+
+}
+
+void* process(void* elements)
+{
+    for (int i = 0; i < num_iterations; i++)
+        SortedList_insert(&sl, &((SortedListElement_t*)elements)[i]);
+    SortedList_length(&sl);
+
 }
