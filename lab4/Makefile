@@ -6,7 +6,8 @@ CFLAGS = $(OPTIMIZE) $(DEBUG) -Wall -Wextra -march=native -mtune=native -std=gnu
 
 default: 
 
-driver-part1: part1/driver.c
+driver-part1: part1/driver.c part1/addtest.c
+	$(CC) $(CFLAGS) $^ -o $@
 
 driver-part2: part2/driver.c part2/SortedList.c
 	$(CC) $(CFLAGS) $^ -o $@
