@@ -29,6 +29,14 @@ static int get_arg_as_number_or_exit(const char* opt, char* arg)
     return num;
 }
 
+enum { sync_none, sync_mutex, sync_spinlock } sync_type = sync_none;
+int num_threads = 0;
+int num_iterations = 0;
+int num_lists = 0;
+bool check_inserts = false;
+bool check_deletes = false;
+bool check_lookups = false;
+
 int main(int argc, char** argv)
 {
     int c;
@@ -43,22 +51,27 @@ int main(int argc, char** argv)
         {
             case 1: // Option "threads"
             {
-                int result = get_arg_as_number_or_exit(long_options[long_options_offset - c].name, optarg);
-
+                num_threads = get_arg_as_number_or_exit(long_options[c - long_options_offset].name, optarg);
                 break;
             }
             case 2: // Option "iterations"
             {
-                int result = get_arg_as_number_or_exit(long_options[long_options_offset - c].name, optarg);
+                num_iterations = get_arg_as_number_or_exit(long_options[c - long_options_offset].name, optarg);
                 break;
             }
             case 3: // Option "yield"
             {
                 if (!strchr(optarg, 'i') && !strchr(optarg, 'd') && !strchr(optarg, 's'))
                 {
-                    fprintf(stderr, "Option \'--yield\' failed: argument does not contain at least one of [ids]\n");
+                    fprintf(stderr, "Option \'--yield\' failed: argument does not contain at least one of \'ids\'\n");
                     exit(1);
                 }
+                if (strchr(optarg, 'i'))
+                    check_inserts = true;
+                if (strchr(optarg, 'd'))
+                    check_deletes = true;
+                if (strchr(optarg, 's'))
+                    check_lookups = true;
                 break;
             }
             case 4: // Option "sync"
@@ -66,15 +79,19 @@ int main(int argc, char** argv)
                 char* result;
                 if (strchr(optarg, 'm') && strchr(optarg, 's'))
                 {
-                    fprintf(stderr, "Option \'--sync\' failed: argument must contain one of [ms], not both\n");
+                    fprintf(stderr, "Option \'--sync\' failed: argument must contain one of \'ms\', not both\n");
                     exit(1);
                 }
                 else if ((result = strchr(optarg, 'm')) || (result = strchr(optarg, 's')))
                 {
+                    if (*result == 'm')
+                        sync_type = sync_mutex;
+                    else
+                        sync_type = sync_spinlock;
                 }
                 else
                 {
-                    fprintf(stderr, "Option \'--sync\' failed: argument does not contain one of [ms]\n");
+                    fprintf(stderr, "Option \'--sync\' failed: argument does not contain one of \'ms\'\n");
                     exit(1);
                 }
 
@@ -82,7 +99,7 @@ int main(int argc, char** argv)
             }
             case 5: // Option "lists"
             {
-                int result = get_arg_as_number_or_exit(long_options[long_options_offset - c].name, optarg);
+                lists = get_arg_as_number_or_exit(long_options[c - long_options_offset].name, optarg);
                 break;
             }
             default:
