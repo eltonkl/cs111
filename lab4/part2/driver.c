@@ -99,11 +99,27 @@ int main(int argc, char** argv)
             }
             case 5: // Option "lists"
             {
-                lists = get_arg_as_number_or_exit(long_options[c - long_options_offset].name, optarg);
+                num_lists = get_arg_as_number_or_exit(long_options[c - long_options_offset].name, optarg);
                 break;
             }
             default:
                 break;
         }
+    }
+
+    if (num_threads <= 0)
+    {
+        fprintf(stderr, "Number of threads must be defined and > 0\n");
+        exit(1);
+    }
+    if (num_iterations <= 0)
+    {
+        fprintf(stderr, "Number of iterations must be defined and > 0\n");
+        exit(1);
+    }
+    if (num_lists < 0)
+    {
+        fprintf(stderr, "Number of lists must be nonnegative\n");
+        exit(1);
     }
 }
