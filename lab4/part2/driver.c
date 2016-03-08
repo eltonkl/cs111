@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <time.h>
+#include <pthread.h>
 
 #include "SortedList.h"
 
@@ -38,6 +40,7 @@ int num_lists = 0;
 bool check_inserts = false;
 bool check_deletes = false;
 bool check_lookups = false;
+int opt_yield = 0;
 
 int main(int argc, char** argv)
 {
@@ -125,6 +128,13 @@ int main(int argc, char** argv)
         exit(1);
     }
 
+    if (check_deletes)
+        opt_yield |= DELETE_YIELD;
+    if (check_inserts)
+        opt_yield |= INSERT_YIELD;
+    if (check_lookups)
+        opt_yield |= SEARCH_YIELD;
+
     SortedList_t sl;
     sl.next = &sl;
     sl.prev = &sl;
@@ -137,8 +147,25 @@ int main(int argc, char** argv)
         exit(1);
     }
 
+    srand(time(NULL));
     for (int i = 0; i < num_threads * num_iterations; i++)
     {
-        
+        int x = rand();
+        x %= 99999999;
+        char* result = (char*)malloc(sizeof(char) * 9); 
+        if (!result)
+        {
+            fprintf(stderr, "malloc failed\n");
+            exit(1);
+        }
+        result[0] = '\0';
+        if (snprintf(result, 9, "%i", x) < 0)
+        {
+            fprintf(stderr, "int to c-string conversion failed\n");
+            exit(1);
+        }
+        elements[i].key = result;
     }
+
+    
 }
