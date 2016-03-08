@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "SortedList.h"
+
 const int long_options_offset = 1;
 
 struct option long_options[] =
@@ -30,8 +32,8 @@ static int get_arg_as_number_or_exit(const char* opt, char* arg)
 }
 
 enum { sync_none, sync_mutex, sync_spinlock } sync_type = sync_none;
-int num_threads = 0;
-int num_iterations = 0;
+int num_threads = 1;
+int num_iterations = 1;
 int num_lists = 0;
 bool check_inserts = false;
 bool check_deletes = false;
@@ -109,17 +111,34 @@ int main(int argc, char** argv)
 
     if (num_threads <= 0)
     {
-        fprintf(stderr, "Number of threads must be defined and > 0\n");
+        fprintf(stderr, "Number of threads must be > 0\n");
         exit(1);
     }
     if (num_iterations <= 0)
     {
-        fprintf(stderr, "Number of iterations must be defined and > 0\n");
+        fprintf(stderr, "Number of iterations must be > 0\n");
         exit(1);
     }
     if (num_lists < 0)
     {
         fprintf(stderr, "Number of lists must be nonnegative\n");
         exit(1);
+    }
+
+    SortedList_t sl;
+    sl.next = &sl;
+    sl.prev = &sl;
+    sl.key = NULL;
+
+    SortedListElement_t* elements = (SortedListElement_t*)malloc(sizeof(SortedListElement_t) * num_threads * num_iterations);
+    if (!elements)
+    {
+        fprintf(stderr, "malloc failed\n");
+        exit(1);
+    }
+
+    for (int i = 0; i < num_threads * num_iterations; i++)
+    {
+        
     }
 }
