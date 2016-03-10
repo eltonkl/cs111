@@ -73,6 +73,7 @@ int SortedList_length(SortedList_t *list)
             pthread_yield();
         if (cur->next->prev != cur || cur->prev->next != cur)
             return -1;
+        cur = cur->next;
     }
     return length;
 }

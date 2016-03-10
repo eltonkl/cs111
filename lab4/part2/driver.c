@@ -42,6 +42,7 @@ bool check_deletes = false;
 bool check_lookups = false;
 int opt_yield = 0;
 SortedList_t sl;
+bool error = false;
 
 void* process(void*);
 
@@ -169,6 +170,10 @@ int main(int argc, char** argv)
         elements[i].key = result;
     }
 
+    /*for (int i = 0; i < num_threads * num_iterations; i++)
+        SortedList_insert(&sl, &elements[i]);
+    printf("%d length\n", SortedList_length(&sl));*/
+
     struct timespec start_time, end_time;
     if (clock_gettime(CLOCK_MONOTONIC, &start_time) != 0)
     {
@@ -201,10 +206,31 @@ int main(int argc, char** argv)
             fprintf(stderr, "error joining thread");
             return 1;
         }
-        if (result == NULL)
-            exit(1);
     }
 
+    if (clock_gettime(CLOCK_MONOTONIC, &end_time) != 0)
+    {
+        fprintf(stderr, "clock_gettime failed\n");
+        exit(1);
+    }
+
+    if (SortedList_length(&sl) != 0)
+    {
+        fprintf(stderr, "list length is not 0\n");
+        error = true;
+    }
+
+    for (int i = 0; i < num_threads * num_iterations; i++)
+        free((void*)elements[i].key);
+    free(elements);
+
+    long long elapsed = 1000000000L * (end_time.tv_sec - start_time.tv_sec) + end_time.tv_nsec - start_time.tv_nsec;
+    printf("%d threads x %d iterations x (ins + lookup/del) x (8 avg len) = %d operations\n", num_threads, num_iterations, num_threads * num_iterations * 8);
+    printf("elapsed time: %lld ns\nper operation: %lld ns\n", elapsed, elapsed/(num_threads * num_iterations * 8));
+
+    if (error)
+        exit(1);
+    return 0;
 }
 
 void* process(void* elements)
@@ -212,5 +238,7 @@ void* process(void* elements)
     for (int i = 0; i < num_iterations; i++)
         SortedList_insert(&sl, &((SortedListElement_t*)elements)[i]);
     SortedList_length(&sl);
-
+    for (int i = 0; i < num_iterations; i++)
+        SortedList_delete(SortedList_lookup(&sl, ((SortedListElement_t*)elements)[i].key));
+    pthread_exit(NULL);
 }
