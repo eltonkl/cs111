@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdint.h>
 #include <time.h>
 #include <pthread.h>
 
@@ -18,6 +19,13 @@ struct option long_options[] =
     { "sync",       required_argument, 0, 4 },
     { "lists",      required_argument, 0, 5 },
 };
+
+typedef struct list
+{
+    SortedList_t sl;
+    pthread_mutex_t mutex;
+    int lock;
+} list_t;
 
 static int get_arg_as_number_or_exit(const char* opt, char* arg)
 {
@@ -36,18 +44,28 @@ static int get_arg_as_number_or_exit(const char* opt, char* arg)
 enum { sync_none, sync_mutex, sync_spinlock } sync_type = sync_none;
 int num_threads = 1;
 int num_iterations = 1;
-int num_lists = 0;
-bool check_inserts = false;
-bool check_deletes = false;
-bool check_lookups = false;
+int num_lists = 1;
 int opt_yield = 0;
-SortedList_t sl;
-bool error = false;
+list_t* lists;
+SortedListElement_t* elements = NULL;
 
 void* process(void*);
+int get_length_of_all_lists();
+
+int get_hash(const char* key)
+{
+    int hash = 0;
+    while (*key != '\0')
+        hash = (hash + (hash >> 5)) + *(key++);
+    return hash % num_lists;
+}
 
 int main(int argc, char** argv)
 {
+    bool error = false;
+    bool check_inserts = false;
+    bool check_deletes = false;
+    bool check_lookups = false;
     int c;
     while (1)
     {
@@ -126,9 +144,9 @@ int main(int argc, char** argv)
         fprintf(stderr, "Number of iterations must be > 0\n");
         exit(1);
     }
-    if (num_lists < 0)
+    if (num_lists <= 0)
     {
-        fprintf(stderr, "Number of lists must be nonnegative\n");
+        fprintf(stderr, "Number of lists must be > 0\n");
         exit(1);
     }
 
@@ -139,11 +157,21 @@ int main(int argc, char** argv)
     if (check_lookups)
         opt_yield |= SEARCH_YIELD;
 
-    sl.next = &sl;
-    sl.prev = &sl;
-    sl.key = NULL;
+    lists = (list_t*)malloc(sizeof(list_t) * num_lists);
+    if (!lists)
+    {
+        fprintf(stderr, "malloc failed\n");
+        exit(1);
+    }
 
-    SortedListElement_t* elements = (SortedListElement_t*)malloc(sizeof(SortedListElement_t) * num_threads * num_iterations);
+    for (int i = 0; i < num_lists; i++)
+    {
+        lists[i].sl.next = &lists[i].sl;
+        lists[i].sl.prev = &lists[i].sl;
+        lists[i].sl.key = NULL;
+    }
+
+    elements = (SortedListElement_t*)malloc(sizeof(SortedListElement_t) * num_threads * num_iterations);
     if (!elements)
     {
         fprintf(stderr, "malloc failed\n");
@@ -170,9 +198,16 @@ int main(int argc, char** argv)
         elements[i].key = result;
     }
 
-    /*for (int i = 0; i < num_threads * num_iterations; i++)
-        SortedList_insert(&sl, &elements[i]);
-    printf("%d length\n", SortedList_length(&sl));*/
+    //for (int i = 0; i < num_threads * num_iterations; i++)
+        //SortedList_insert(&lists[0].sl, &elements[i]);
+    //printf("%d length\n", SortedList_length(&lists[0].sl));
+
+    pthread_t* threads = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
+    if (threads == NULL)
+    {
+        fprintf(stderr, "error allocating memory\n");
+        exit(1);
+    }
 
     struct timespec start_time, end_time;
     if (clock_gettime(CLOCK_MONOTONIC, &start_time) != 0)
@@ -181,19 +216,12 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    pthread_t* tids = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
-    if (tids == NULL)
-    {
-        fprintf(stderr, "error allocating memory");
-        exit(1);
-    }
-
     for (int i = 0; i < num_threads; i++)
     {
-        int result = pthread_create(&tids[i], NULL, process, (void *)&elements[i * num_iterations]);
+        int result = pthread_create(&threads[i], NULL, process, (void*)(uintptr_t)i);
         if (result == 1)
         {
-            fprintf(stderr, "error creating thread");
+            fprintf(stderr, "error creating thread\n");
             exit(1);
         }
     }
@@ -201,9 +229,9 @@ int main(int argc, char** argv)
     for (int i = 0; i < num_threads; i++)
     {
         void* result;
-        if (pthread_join(tids[i], &result) == 1)
+        if (pthread_join(threads[i], &result) == 1)
         {
-            fprintf(stderr, "error joining thread");
+            fprintf(stderr, "error joining thread\n");
             return 1;
         }
     }
@@ -214,31 +242,51 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    if (SortedList_length(&sl) != 0)
+    long long elapsed = 1000000000L * (end_time.tv_sec - start_time.tv_sec) + end_time.tv_nsec - start_time.tv_nsec;
+    printf("%d threads x %d iterations x (ins + lookup/del) x (8 avg len) = %d operations\n", num_threads, num_iterations, num_threads * num_iterations * 8);
+    printf("elapsed time: %lld ns\nper operation: %lld ns\n", elapsed, elapsed/(num_threads * num_iterations * 8));
+
+    if (get_length_of_all_lists() != 0)
     {
         fprintf(stderr, "list length is not 0\n");
         error = true;
     }
 
+    free(lists);
     for (int i = 0; i < num_threads * num_iterations; i++)
         free((void*)elements[i].key);
     free(elements);
-
-    long long elapsed = 1000000000L * (end_time.tv_sec - start_time.tv_sec) + end_time.tv_nsec - start_time.tv_nsec;
-    printf("%d threads x %d iterations x (ins + lookup/del) x (8 avg len) = %d operations\n", num_threads, num_iterations, num_threads * num_iterations * 8);
-    printf("elapsed time: %lld ns\nper operation: %lld ns\n", elapsed, elapsed/(num_threads * num_iterations * 8));
+    free(threads);
 
     if (error)
         exit(1);
     return 0;
 }
 
-void* process(void* elements)
+void* process(void* thread_num)
 {
+    SortedListElement_t* start = &elements[*((int*)&thread_num) * num_iterations];
+
     for (int i = 0; i < num_iterations; i++)
-        SortedList_insert(&sl, &((SortedListElement_t*)elements)[i]);
-    SortedList_length(&sl);
+    {
+        int hash = get_hash(start[i].key);
+        SortedList_insert(&lists[hash].sl, &start[i]);
+    }
+    get_length_of_all_lists();
     for (int i = 0; i < num_iterations; i++)
-        SortedList_delete(SortedList_lookup(&sl, ((SortedListElement_t*)elements)[i].key));
+    {
+        int hash = get_hash(start[i].key);
+        SortedList_delete(SortedList_lookup(&lists[hash].sl, start[i].key));
+    }
     pthread_exit(NULL);
+}
+
+int get_length_of_all_lists()
+{
+    int total = 0;
+    for (int i = 0; i < num_lists; i++)
+    {
+        total += SortedList_length(&lists[i].sl);
+    }
+    return total;
 }
