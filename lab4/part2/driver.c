@@ -320,7 +320,7 @@ void acquire_lock(int i)
 {
     if (sync_type == sync_spinlock)
     {
-        while (__sync_lock_test_and_set(&spinlocks[i], 0))
+        while (__sync_lock_test_and_set(&spinlocks[i], 1))
             continue;
     }
     else if (sync_type == sync_mutex)
@@ -330,7 +330,7 @@ void acquire_lock(int i)
 void release_lock(int i)
 {
     if (sync_type == sync_spinlock)
-        __sync_lock_test_and_set(&spinlocks[i], 1);
+        __sync_lock_release(&spinlocks[i]);
     else if (sync_type == sync_mutex)
         pthread_mutex_unlock(&mutexes[i]);
 }
