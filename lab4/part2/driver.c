@@ -158,7 +158,7 @@ int main(int argc, char** argv)
         lists[i].sl.key = NULL;
 
         if (sync_type == sync_spinlock)
-            spinlocks[i] = 1;
+            spinlocks[i] = 0;
         else if (sync_type == sync_mutex)
             pthread_mutex_init(&mutexes[i], NULL);
     }
