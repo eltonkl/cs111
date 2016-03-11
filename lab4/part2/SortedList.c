@@ -54,10 +54,12 @@ SortedListElement_t *SortedList_lookup(SortedList_t *list, const char *key)
     {
         if (opt_yield & SEARCH_YIELD)
             pthread_yield();
-        if (strcmp(cur->next->key, key) == 0)
+        if (cur->next && strcmp(cur->next->key, key) == 0)
             return cur->next;
-        else
+        else if (cur->next)
             cur = cur->next;
+        else
+            break;
     }
     return NULL;
 }

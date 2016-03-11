@@ -27,19 +27,6 @@ typedef struct list
     int lock;
 } list_t;
 
-static int get_arg_as_number_or_exit(const char* opt, char* arg)
-{
-    char* end;
-    int num = (int)strtol(arg, &end, 0);
-
-    if (end == arg)
-    {
-        fprintf(stderr, "Option \'--%s\' failed: not a valid number: %s\n", opt, arg);
-        exit(1);
-    }
-
-    return num;
-}
 
 enum { sync_none, sync_mutex, sync_spinlock } sync_type = sync_none;
 int num_threads = 1;
@@ -47,18 +34,16 @@ int num_iterations = 1;
 int num_lists = 1;
 int opt_yield = 0;
 list_t* lists;
+int* spinlocks;
+pthread_mutex_t* mutexes;
 SortedListElement_t* elements = NULL;
 
+static int get_arg_as_number_or_exit(const char* opt, char* arg);
 void* process(void*);
 int get_length_of_all_lists();
-
-int get_hash(const char* key)
-{
-    int hash = 0;
-    while (*key != '\0')
-        hash = (hash + (hash >> 5)) + *(key++);
-    return hash % num_lists;
-}
+int get_hash(const char* key);
+void acquire_lock(int i);
+void release_lock(int i);
 
 int main(int argc, char** argv)
 {
@@ -158,7 +143,9 @@ int main(int argc, char** argv)
         opt_yield |= SEARCH_YIELD;
 
     lists = (list_t*)malloc(sizeof(list_t) * num_lists);
-    if (!lists)
+    spinlocks = (int*)malloc(sizeof(int) * num_lists);
+    mutexes = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t) * num_lists);
+    if (!lists || !spinlocks || !mutexes)
     {
         fprintf(stderr, "malloc failed\n");
         exit(1);
@@ -169,6 +156,11 @@ int main(int argc, char** argv)
         lists[i].sl.next = &lists[i].sl;
         lists[i].sl.prev = &lists[i].sl;
         lists[i].sl.key = NULL;
+
+        if (sync_type == sync_spinlock)
+            spinlocks[i] = 1;
+        else if (sync_type == sync_mutex)
+            pthread_mutex_init(&mutexes[i], NULL);
     }
 
     elements = (SortedListElement_t*)malloc(sizeof(SortedListElement_t) * num_threads * num_iterations);
@@ -252,15 +244,34 @@ int main(int argc, char** argv)
         error = true;
     }
 
-    free(lists);
+    for (int i = 0; i < num_lists; i++)
+        if (sync_type == sync_mutex)
+            pthread_mutex_destroy(&mutexes[i]);
     for (int i = 0; i < num_threads * num_iterations; i++)
         free((void*)elements[i].key);
     free(elements);
     free(threads);
+    free(spinlocks);
+    free(mutexes);
+    free(lists);
 
     if (error)
         exit(1);
     return 0;
+}
+
+static int get_arg_as_number_or_exit(const char* opt, char* arg)
+{
+    char* end;
+    int num = (int)strtol(arg, &end, 0);
+
+    if (end == arg)
+    {
+        fprintf(stderr, "Option \'--%s\' failed: not a valid number: %s\n", opt, arg);
+        exit(1);
+    }
+
+    return num;
 }
 
 void* process(void* thread_num)
@@ -270,13 +281,17 @@ void* process(void* thread_num)
     for (int i = 0; i < num_iterations; i++)
     {
         int hash = get_hash(start[i].key);
+        acquire_lock(hash);
         SortedList_insert(&lists[hash].sl, &start[i]);
+        release_lock(hash);
     }
     get_length_of_all_lists();
     for (int i = 0; i < num_iterations; i++)
     {
         int hash = get_hash(start[i].key);
+        acquire_lock(hash);
         SortedList_delete(SortedList_lookup(&lists[hash].sl, start[i].key));
+        release_lock(hash);
     }
     pthread_exit(NULL);
 }
@@ -286,7 +301,36 @@ int get_length_of_all_lists()
     int total = 0;
     for (int i = 0; i < num_lists; i++)
     {
+        acquire_lock(i);
         total += SortedList_length(&lists[i].sl);
+        release_lock(i);
     }
     return total;
+}
+
+int get_hash(const char* key)
+{
+    int hash = 0;
+    while (*key != '\0')
+        hash = (hash + (hash >> 5)) + *(key++);
+    return hash % num_lists;
+}
+
+void acquire_lock(int i)
+{
+    if (sync_type == sync_spinlock)
+    {
+        while (__sync_lock_test_and_set(&spinlocks[i], 0))
+            continue;
+    }
+    else if (sync_type == sync_mutex)
+        pthread_mutex_lock(&mutexes[i]);
+}
+
+void release_lock(int i)
+{
+    if (sync_type == sync_spinlock)
+        __sync_lock_test_and_set(&spinlocks[i], 1);
+    else if (sync_type == sync_mutex)
+        pthread_mutex_unlock(&mutexes[i]);
 }
