@@ -1,0 +1,33 @@
+1.1
+
+It takes at least 2 (though having more helps) and around 5000 iterations for the counter to begin consistently producing an incorrect value. 
+
+1.
+We realize that if we use only 1 thread and a ridiculously high number of iterations that the number is never inconsistent. Thus, it is reasonable to conclude that the race conditions that are introduced by creating multiple threads without accounting for said race conditions are what is causing the problem. The reason why this occurs is because when we have an unprotected shared variable, the time between changing a value and appropriately updating it may not be atomic. For example, the counter's value may be at 5, then incremented to 6. However, there may be a race condition in which another thread examines the counter at value 5 and increments it to 6 (storing it in sum, just like the previous thread). The problem here is that the value is supposed to be 7, but now no matter what we do we can only update the counter to 6.
+
+2.
+The reason why a small number of iterations is unlikely to produce such a failure is simply because a race condition is much less likely to occur. There is also the mathematical possibility that even if our wrapper function fails to account for, hypothetically, 3 increments, there is still the possibility that a parallel race condition fails to account for 3 decrements, balancing the value by pure happenstance. This possibility is viable for, say, 10 iterations in terms of probability, but the same is not true for, say, 500,000,000,000 iterations (in fact, at this point the chances of success are next to nil).
+
+1.2
+1.
+At the beginning of our main function we have some overhead that handles parsing and thread creation (even though for this graph it's only the overhead for a single thread). This time remains more or less the same because we only need to perform it once before it starts performing iterations. Thus, as we increase the number of iterations this overhead is spread out more and more thinly,
+
+2.
+The "correct" cost can be obtained by accounting for the thread creation overhead and subtracting it from the recorded time value before calculating the average time per operation. If we do this, the relationship should become much more linear regardless of the number of iterations we use.
+
+3.
+Yield runs are far slower because there is overhead associated with calling the pthread_yield() function. This overhead is enough to be noticable even if there is only one thread (likely because the entirety of the call isn't just potentially switching to a different thread). The big downside of setting the yield option is that this will make the yield be called for every single iteration! This is drastically more expensive than the simple calculation no matter how we look at it.
+
+4.
+We could potentially get valid timings of the operations if we could account for every pthread_yield() call just like we account for the initial overhead in thread creation. Unfortunately the behavior of this function can vary and thus its runtime could hover between significantly different runtimes in nanoseconds. As such it is not very viable to perform timings with yields, though theoretically if we modeled the function's average properly we could account for it as well.
+
+1.3
+1.
+The reason why they perform similarly for low numbers of threads is because each thread spends relatively little time actually locked and not performing any operations. The three protected ones are similar (though still slightly worse) because differences in overhead for lock maintenance is relatively insignificant at this point. However, there IS overhead so that's why they are all worse than the unprotected one, which just charges forward recklessly.
+
+2.
+As the number of threads goes up, the bottleneck effectively worsens. When we lock a particular section of code, if it is only shared among 5 threads then effectively 4 of them are idle at any time, which is not so bad. If we have 40 threads then 39 of them are effectively idle at any given time. This idleness should take its toll as the number of threads increases.
+
+3.
+In contrast with a mutex lock or compare and swap approach, a spin lock doesn't actually block the thread. Rather, it has it keep trying to lock the critical section and failing. In a sense, these threads are always awake, and thus contribute 
+
