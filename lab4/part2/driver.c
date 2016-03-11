@@ -202,7 +202,7 @@ int main(int argc, char** argv)
     }
 
     struct timespec start_time, end_time;
-    if (clock_gettime(CLOCK_MONOTONIC, &start_time) != 0)
+    if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_time) != 0)
     {
         fprintf(stderr, "clock_gettime failed\n");
         exit(1);
@@ -228,7 +228,7 @@ int main(int argc, char** argv)
         }
     }
 
-    if (clock_gettime(CLOCK_MONOTONIC, &end_time) != 0)
+    if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end_time) != 0)
     {
         fprintf(stderr, "clock_gettime failed\n");
         exit(1);
