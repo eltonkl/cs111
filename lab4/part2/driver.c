@@ -235,8 +235,8 @@ int main(int argc, char** argv)
     }
 
     long long elapsed = 1000000000L * (end_time.tv_sec - start_time.tv_sec) + end_time.tv_nsec - start_time.tv_nsec;
-    printf("%d threads x %d iterations x (ins + lookup/del) x (8 avg len) = %d operations\n", num_threads, num_iterations, num_threads * num_iterations * 8);
-    printf("elapsed time: %lld ns\nper operation: %lld ns\n", elapsed, elapsed/(num_threads * num_iterations * 8));
+    printf("%d threads x %d iterations x (ins + lookup/del) x (8 avg len) = %d operations\n", num_threads, num_iterations, num_threads * num_iterations * 3 * 8);
+    printf("elapsed time: %lld ns\nper operation: %lld ns\n", elapsed, elapsed/(num_threads * num_iterations * 3 * 8));
 
     if (get_length_of_all_lists() != 0)
     {
