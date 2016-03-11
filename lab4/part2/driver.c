@@ -160,7 +160,13 @@ int main(int argc, char** argv)
         if (sync_type == sync_spinlock)
             spinlocks[i] = 0;
         else if (sync_type == sync_mutex)
-            pthread_mutex_init(&mutexes[i], NULL);
+        {
+            if (pthread_mutex_init(&mutexes[i], NULL) != 0)
+            {
+                fprintf(stderr, "pthread_mutex_init failed\n");
+                exit(1);
+            }
+        }
     }
 
     elements = (SortedListElement_t*)malloc(sizeof(SortedListElement_t) * num_threads * num_iterations);
@@ -190,10 +196,6 @@ int main(int argc, char** argv)
         elements[i].key = result;
     }
 
-    //for (int i = 0; i < num_threads * num_iterations; i++)
-        //SortedList_insert(&lists[0].sl, &elements[i]);
-    //printf("%d length\n", SortedList_length(&lists[0].sl));
-
     pthread_t* threads = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
     if (threads == NULL)
     {
@@ -211,7 +213,7 @@ int main(int argc, char** argv)
     for (int i = 0; i < num_threads; i++)
     {
         int result = pthread_create(&threads[i], NULL, process, (void*)(uintptr_t)i);
-        if (result == 1)
+        if (result != 0)
         {
             fprintf(stderr, "error creating thread\n");
             exit(1);
@@ -221,7 +223,7 @@ int main(int argc, char** argv)
     for (int i = 0; i < num_threads; i++)
     {
         void* result;
-        if (pthread_join(threads[i], &result) == 1)
+        if (pthread_join(threads[i], &result) != 0)
         {
             fprintf(stderr, "error joining thread\n");
             return 1;
